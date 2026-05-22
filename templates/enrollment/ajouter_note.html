@@ -1,0 +1,44 @@
+<h1>
+    Ajouter Notes
+</h1>
+
+<h2>
+    {{ module_choisi.module.titre }}
+</h2>
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    {% for cat in module_choisi.module.categories.all %}
+
+        <div style="margin:20px;">
+
+            <label>
+
+                {{ cat.nom }}
+                ({{ cat.poids }}%)
+
+            </label>
+
+            <br>
+
+            <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="20"
+                name="cat_{{ cat.id }}"
+            >
+
+        </div>
+
+    {% endfor %}
+
+    <button type="submit">
+
+        Enregistrer
+
+    </button>
+
+</form>

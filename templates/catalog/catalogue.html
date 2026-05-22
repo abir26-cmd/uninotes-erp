@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mb-4">
+
+    Catalogue Modules
+
+</h1>
+
+
+<!-- ALERTES -->
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div class="alert alert-info">
+
+            {{ message }}
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+<!-- STATS -->
+
+<div class="row mb-4">
+
+    <div class="col-md-4">
+
+        <div class="card bg-primary text-white shadow">
+
+            <div class="card-body">
+
+                <h5>
+
+                    Total Points
+
+                </h5>
+
+                <h2>
+
+                    {{ total }}/60
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="card bg-success text-white shadow">
+
+            <div class="card-body">
+
+                <h5>
+
+                    Reste
+
+                </h5>
+
+                <h2>
+
+                    {{ reste }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="card bg-dark text-white shadow">
+
+            <div class="card-body">
+
+                <h5>
+
+                    Statut
+
+                </h5>
+
+                <h2>
+
+                    {{ statut }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SUGGESTIONS -->
+
+<h3 class="mb-3 text-success fw-bold">
+
+    Suggestions Intelligentes
+
+</h3>
+
+<div class="row mb-5">
+
+    {% for s in suggestions %}
+
+    <div class="col-md-4">
+
+        <div class="card border-success shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h5 class="fw-bold text-success">
+
+                    {{ s.titre }}
+
+                </h5>
+
+                <p>
+
+                    {{ s.description }}
+
+                </p>
+
+                <p>
+
+                    Coefficient:
+
+                    <strong>
+
+                        {{ s.coefficient }}
+
+                    </strong>
+
+                </p>
+
+                <a href="{% url 'ajouter_module' s.id %}">
+
+                    <button
+                        class="btn btn-success w-100"
+                    >
+
+                        Ajouter Suggestion
+
+                    </button>
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <p>
+
+        Aucune suggestion disponible
+
+    </p>
+
+    {% endfor %}
+
+</div>
+
+
+<!-- MODULES -->
+
+<h3 class="mb-3">
+
+    Tous les Modules
+
+</h3>
+
+<div class="row">
+
+    {% for module in modules %}
+
+    <div class="col-md-4 mb-4">
+
+        <div class="card h-100 shadow-sm">
+
+            <div class="card-body">
+
+                <h5 class="fw-bold">
+
+                    {{ module.titre }}
+
+                </h5>
+
+                <p>
+
+                    {{ module.description }}
+
+                </p>
+
+                <p>
+
+                    Coefficient:
+
+                    <strong>
+
+                        {{ module.coefficient }}
+
+                    </strong>
+
+                </p>
+
+                {% if module.id in modules_choisis %}
+
+                    {% if has_notes %}
+
+                        <button
+                            class="btn btn-secondary w-100"
+                            disabled
+                        >
+
+                            Verrouillé après notes
+
+                        </button>
+
+                    {% else %}
+
+                        <a href="{% url 'supprimer_module' module.id %}">
+
+                            <button
+                                class="btn btn-danger w-100"
+                            >
+
+                                Supprimer
+
+                            </button>
+
+                        </a>
+
+                    {% endif %}
+
+                {% else %}
+
+                    {% if has_notes %}
+
+                        <button
+                            class="btn btn-secondary w-100"
+                            disabled
+                        >
+
+                            Modification impossible
+
+                        </button>
+
+                    {% else %}
+
+                        <a href="{% url 'ajouter_module' module.id %}">
+
+                            <button
+                                class="btn btn-primary w-100"
+                            >
+
+                                Ajouter
+
+                            </button>
+
+                        </a>
+
+                    {% endif %}
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

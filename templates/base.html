@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>UniNotes ERP</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        body {
+            background: #f5f7fb;
+        }
+
+        .navbar {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .container-box {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+
+        <div class="container">
+
+            <a class="navbar-brand fw-bold"
+               href="#">
+
+                UniNotes ERP
+
+            </a>
+
+            <div class="collapse navbar-collapse">
+
+                <ul class="navbar-nav ms-auto">
+
+                    {% if user.is_authenticated %}
+
+                        <!-- ETUDIANT -->
+
+                        {% if user.profile.role == "etudiant" %}
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'catalogue' %}">
+
+                                Catalogue
+
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'dashboard' %}">
+
+                                Dashboard
+
+                            </a>
+
+                        </li>
+
+                        {% endif %}
+
+
+                        <!-- TUTEUR -->
+
+                        {% if user.profile.role == "tuteur" %}
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'tutor_dashboard' %}">
+
+                                Tutor Dashboard
+
+                            </a>
+
+                        </li>
+
+                        {% endif %}
+
+
+                        <!-- ADMIN -->
+
+                        {% if user.is_superuser %}
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="/admin/">
+
+                                Admin
+
+                            </a>
+
+                        </li>
+
+                        {% endif %}
+
+                        <!-- LOGOUT -->
+
+                        <li class="nav-item">
+
+                            <a class="nav-link text-warning"
+                               href="{% url 'logout' %}">
+
+                                Logout
+
+                            </a>
+
+                        </li>
+
+                    {% else %}
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'login' %}">
+
+                                Login
+
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'register' %}">
+
+                                Register
+
+                            </a>
+
+                        </li>
+
+                    {% endif %}
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- MESSAGES -->
+
+    <div class="container mt-3">
+
+        {% for message in messages %}
+
+        <div class="alert alert-info">
+
+            {{ message }}
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <!-- CONTENT -->
+
+    <div class="container mt-4">
+
+        <div class="container-box">
+
+            {% block content %}
+
+            {% endblock %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

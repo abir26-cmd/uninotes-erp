@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container py-5">
+
+    <h1 class="text-center mb-5">
+
+        Enseignant Dashboard
+
+    </h1>
+
+    {% for item in data %}
+
+    <div class="card shadow mb-5">
+
+        <div class="card-body">
+
+            <!-- MODULE -->
+
+            <h2 class="text-primary">
+
+                {{ item.module.titre }}
+
+            </h2>
+
+            <p>
+
+                Coefficient:
+                <strong>
+
+                    {{ item.module.coefficient }}
+
+                </strong>
+
+            </p>
+
+            <hr>
+
+            <!-- ETUDIANTS -->
+
+            <h4 class="mb-4">
+
+                Étudiants
+
+            </h4>
+
+            <div class="row">
+
+                {% for e in item.etudiants %}
+
+                <div class="col-md-6 mb-4">
+
+                    <div class="card border-primary h-100">
+
+                        <div class="card-body">
+
+                            <h5 class="fw-bold">
+
+                                {{ e.username }}
+
+                            </h5>
+
+                            <p>
+
+                                Moyenne module:
+
+                                <span class="badge bg-success">
+
+                                    {{ e.moyenne|default:"0" }}
+
+                                </span>
+
+                            </p>
+
+                            <h6>
+
+                                Notes:
+
+                            </h6>
+
+                            <ul>
+
+                                {% for note in e.notes %}
+
+                                <li>
+
+                                    {{ note.categorie.nom }}
+
+                                    :
+
+                                    <strong>
+
+                                        {{ note.valeur }}
+
+                                    </strong>
+
+                                </li>
+
+                                {% empty %}
+
+                                <li>
+
+                                    Aucune note
+
+                                </li>
+
+                                {% endfor %}
+
+                            </ul>
+
+                            <a href="{% url 'ajouter_note' e.module_choisi_id %}">
+
+                                <button class="btn btn-primary w-100">
+
+                                    Ajouter / Modifier Notes
+
+                                </button>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% empty %}
+
+                <p>
+
+                    Aucun étudiant inscrit
+
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="alert alert-warning">
+
+        Aucun module assigné
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

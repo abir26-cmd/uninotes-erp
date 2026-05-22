@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-6">
+
+            <div class="card shadow p-4">
+
+                <h2 class="text-center mb-4">
+
+                    Register
+
+                </h2>
+
+                <!-- MESSAGES -->
+
+                {% if messages %}
+
+                    {% for message in messages %}
+
+                        <div class="alert alert-info">
+
+                            {{ message }}
+
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+                <form method="POST">
+
+                    {% csrf_token %}
+
+                    <!-- USERNAME -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+
+                            Username
+
+                        </label>
+
+                        <input
+                            type="text"
+                            name="username"
+                            class="form-control"
+                            required
+                        >
+
+                    </div>
+
+                    <!-- PASSWORD -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+
+                            Password
+
+                        </label>
+
+                        <input
+                            type="password"
+                            name="password"
+                            class="form-control"
+                            required
+                        >
+
+                    </div>
+
+                    <!-- ROLE -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+
+                            Role
+
+                        </label>
+
+                        <select
+                            name="role"
+                            id="role-select"
+                            class="form-select"
+                            required
+                        >
+
+                            <option value="">
+
+                                Choisir
+
+                            </option>
+
+                            <option value="etudiant">
+
+                                Etudiant
+
+                            </option>
+
+                            <option value="tuteur">
+
+                                Tuteur
+
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- TUTEUR -->
+
+                    <div
+                        class="mb-3"
+                        id="tuteur-field"
+                        style="display:none;"
+                    >
+
+                        <label class="form-label">
+
+                            Choisir un Tuteur
+
+                        </label>
+
+                        <select
+                            name="tuteur"
+                            class="form-select"
+                        >
+
+                            <option value="">
+
+                                Aucun
+
+                            </option>
+
+                            {% for t in tuteurs %}
+
+                                <option value="{{ t.user.id }}">
+
+                                    {{ t.user.username }}
+
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- BUTTON -->
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+
+                        Register
+
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-3">
+
+                    <a href="{% url 'login' %}">
+
+                        Déjà un compte ?
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    const roleSelect = document.getElementById(
+        "role-select"
+    );
+
+    const tuteurField = document.getElementById(
+        "tuteur-field"
+    );
+
+    roleSelect.addEventListener("change", function(){
+
+        if(this.value === "etudiant"){
+
+            tuteurField.style.display = "block";
+
+        }else{
+
+            tuteurField.style.display = "none";
+
+        }
+
+    });
+
+</script>
+
+{% endblock %}
