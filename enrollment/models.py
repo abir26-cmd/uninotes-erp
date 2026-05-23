@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from catalog.models import CatalogueModule, CategorieEvaluation
+from django.shortcuts import (
+    render,
+    
+)
 from decimal import Decimal
 from django.db.models import Sum
 from decimal import Decimal
@@ -160,6 +164,8 @@ class ModuleChoisi(models.Model):
     
     
     
+
+
 class Note(models.Model):
 
     module_choisi = models.ForeignKey(
@@ -189,3 +195,102 @@ class Note(models.Model):
 
     def __str__(self):
         return f"{self.module_choisi} - {self.categorie}"
+    
+    
+
+
+# -------------------
+# NOTIFICATIONS
+# -------------------
+
+class Notification(models.Model):
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    message = models.CharField(
+        max_length=255
+    )
+
+    is_read = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return self.message
+
+
+# -------------------
+# REMARQUE ENSEIGNANT
+# -------------------
+
+class RemarqueEnseignant(models.Model):
+
+    etudiant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='remarques_enseignants'
+    )
+
+    enseignant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='remarques_envoyees_enseignant'
+    )
+
+    module = models.ForeignKey(
+        CatalogueModule,
+        on_delete=models.CASCADE
+    )
+
+    contenu = models.TextField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return f"{self.etudiant.username} - {self.module.titre}"
+
+
+# -------------------
+# SUIVI TUTEUR
+# -------------------
+class SuiviTuteur(models.Model):
+    
+    etudiant = models.ForeignKey(
+
+        User,
+
+        on_delete=models.CASCADE,
+
+        related_name='suivis_tuteur'
+    )
+
+    tuteur = models.ForeignKey(
+
+        User,
+
+        on_delete=models.CASCADE,
+
+        related_name='suivis_encadres'
+    )
+
+    remarque = models.TextField()
+
+    created_at = models.DateTimeField(
+
+        auto_now_add=True
+    )
+
+    def __str__(self):
+
+        return f"Suivi - {self.etudiant.username}"

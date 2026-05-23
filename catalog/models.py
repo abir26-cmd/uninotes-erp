@@ -31,9 +31,8 @@ class CatalogueModule(models.Model):
 
         blank=True,
 
-        related_name="modules_enseignes"
-    )
-
+        related_name='modules_enseignes'
+    )    
     def __str__(self):
 
         return self.titre

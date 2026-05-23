@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="card shadow border-0 rounded-4">
+
+        <div class="card-body p-4">
+
+            <h2 class="fw-bold mb-4 text-primary">
+
+                Ajouter Remarque Tuteur
+
+            </h2>
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <div class="mb-3">
+
+                    <label class="form-label fw-semibold">
+
+                        Étudiant
+
+                    </label>
+
+                    {{ form.etudiant }}
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label fw-semibold">
+
+                        Remarque
+
+                    </label>
+
+                    {{ form.remarque }}
+
+                </div>
+
+                <button class="btn btn-primary px-4">
+
+                    <i class="bi bi-send-fill me-2"></i>
+
+                    Envoyer
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

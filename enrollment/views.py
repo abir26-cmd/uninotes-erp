@@ -18,7 +18,8 @@ from django.db.models.functions import Cast
 from .models import (
     Inscription,
     ModuleChoisi,
-    Note
+    Note,
+    Notification
 )
 
 from catalog.models import (
@@ -27,6 +28,11 @@ from catalog.models import (
 
 import json
 
+from .forms import (
+    RemarqueEnseignantForm,
+    SuiviTuteurForm
+)
+from .models import Notification
 
 # =========================
 # DASHBOARD ETUDIANT
@@ -39,7 +45,12 @@ def dashboard(request):
         Inscription,
         user=request.user
     )
-
+    
+    notifications = Notification.objects.filter(
+    user=request.user
+    ).order_by('-created_at')[:5]
+    
+    
     # optimisation ORM
     modules_qs = inscription.modules.select_related(
         'module'
@@ -140,7 +151,8 @@ def dashboard(request):
 
             "moyenne_generale": moyenne_generale,
 
-            "evolution": json.dumps(evolution)
+            "evolution": json.dumps(evolution),
+            "notifications": notifications,
 
         }
     )
@@ -247,3 +259,201 @@ def ajouter_note(request, module_id):
         }
     )
 
+
+
+
+
+@login_required
+def profile(request):
+
+    if request.method == "POST":
+
+        user = request.user
+
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.email = request.POST.get('email')
+
+        # TELEPHONE
+
+        user.profile.telephone = request.POST.get('telephone')
+
+        # PASSWORD
+
+        password = request.POST.get('password')
+
+        if password:
+            user.set_password(password)
+
+        user.save()
+        user.profile.save()
+
+        messages.success(
+            request,
+            "Profil mis à jour avec succès."
+        )
+
+    return render(
+        request,
+        'profile.html'
+    )
+    
+# =========================    
+# PAGE NOTIFICATIONS
+# =========================
+@login_required
+def notifications_page(request):
+
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by('-created_at')
+
+    # MARK AS READ
+
+    notifications.update(is_read=True)
+
+    return render(
+        request,
+        'notifications.html',
+        {
+            'notifications': notifications
+        }
+    )    
+    
+
+# =========================
+# AJOUT REMARQUE (TUTEUR)
+# ========================= 
+@login_required
+def ajouter_remarque(request):
+
+    if request.user.profile.role != "enseignant":
+
+        return redirect('dashboard')
+
+    if request.method == "POST":
+
+        form = RemarqueEnseignantForm(
+            request.POST
+        )
+
+        if form.is_valid():
+
+            remarque = form.save(
+                commit=False
+            )
+
+            remarque.enseignant = request.user
+
+            remarque.save()
+
+            Notification.objects.create(
+
+                user=remarque.etudiant,
+
+                message=f"Nouvelle remarque dans le module {remarque.module.titre}"
+
+            )
+
+            messages.success(
+                request,
+                "Remarque envoyée avec succès."
+            )
+
+            return redirect(
+                'dashboard'
+            )
+
+    else:
+
+        form = RemarqueEnseignantForm()
+
+    context = {
+
+        'form': form
+
+    }
+
+    return render(
+
+        request,
+
+        'ajouter_remarque.html',
+
+        context
+    )
+    
+@login_required
+def ajouter_suivi_tuteur(request):
+
+    if request.user.profile.role != "tuteur":
+
+        return redirect('dashboard')
+
+    if request.method == "POST":
+
+        form = SuiviTuteurForm(
+
+            request.POST
+        )
+
+        # FILTRAGE ETUDIANTS
+        form.fields['etudiant'].queryset = User.objects.filter(
+
+            profile__tuteur=request.user,
+
+            profile__role='etudiant'
+        )
+
+        if form.is_valid():
+
+            suivi = form.save(
+
+                commit=False
+            )
+
+            suivi.tuteur = request.user
+
+            suivi.save()
+
+            Notification.objects.create(
+
+                user=suivi.etudiant,
+
+                message="Nouvelle remarque de votre tuteur."
+            )
+
+            messages.success(
+
+                request,
+
+                "Remarque envoyée."
+            )
+
+            return redirect(
+
+                'tutor_dashboard'
+            )
+
+    else:
+
+        form = SuiviTuteurForm()
+
+        form.fields['etudiant'].queryset = User.objects.filter(
+
+            profile__tuteur=request.user,
+
+            profile__role='etudiant'
+        )
+
+    return render(
+
+        request,
+
+        'ajouter_suivi_tuteur.html',
+
+        {
+
+            'form': form
+        }
+    )

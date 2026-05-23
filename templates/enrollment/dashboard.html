@@ -4,191 +4,398 @@
 
 <style>
 
-    .dashboard-header {
-        text-align: center;
-        margin-bottom: 30px;
+    .welcome-card {
+        background: linear-gradient(135deg, #0d6efd, #4f8cff);
+        border-radius: 24px;
+        padding: 35px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(13,110,253,0.25);
     }
 
-    .stat-card {
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-    }
-
-    .module-card {
-        border-radius: 14px;
+    .stats-card {
+        border: none;
+        border-radius: 20px;
+        padding: 20px;
         transition: 0.3s;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        height: 100%;
     }
 
-    .module-card:hover {
+    .stats-card:hover {
         transform: translateY(-5px);
     }
 
-    .chart-card {
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    .module-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: 0.3s;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        height: 100%;
+    }
+
+    .module-card:hover {
+        transform: translateY(-6px);
+    }
+
+    .module-header {
+        background: linear-gradient(135deg, #0d6efd, #3d84ff);
+        color: white;
+        padding: 15px;
+    }
+
+    .section-title {
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .chart-card,
+    .notification-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    }
+
+    .notification-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .progress {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid #f1f1f1;
     }
 
 </style>
 
+<div class="container py-2">
 
-<div class="container py-4">
+    <!-- WELCOME CARD -->
 
-    <!-- HEADER -->
+    <div class="welcome-card mb-4">
 
-    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
 
-        <h1 class="fw-bold">
+            <div>
 
-            Student Dashboard
+                <h2 class="fw-bold mb-2">
 
-        </h1>
+                    Welcome back,
+                    {{ user.first_name|default:user.username }} 👋
 
-        <p class="text-muted">
+                </h2>
 
-            Suivi académique intelligent
+                <p class="mb-0">
 
-        </p>
+                    Suivi académique intelligent et gestion des performances.
 
-    </div>
+                </p>
 
+            </div>
 
-    <!-- MOYENNE GENERALE -->
+            <div class="text-center mt-3 mt-md-0">
 
-    <div class="card stat-card bg-primary text-white mb-4">
+                <h6>
 
-        <div class="card-body text-center">
+                    Moyenne Générale
 
-            <h5>
+                </h6>
 
-                Moyenne Générale
+                <h1 class="fw-bold">
 
-            </h5>
+                    {{ moyenne_generale }}
 
-            <h1 class="fw-bold">
+                </h1>
 
-                {{ moyenne_generale }}
+                <!-- PROGRESS -->
 
-            </h1>
+                <div class="progress mt-3"
+                     style="height:10px; width:200px;">
+
+                    <div class="progress-bar bg-success"
+                         style="width: {{ moyenne_generale|floatformat:0 }}0%">
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
     </div>
 
+    <!-- STATS -->
+
+    <div class="row g-4 mb-4">
+
+        <!-- MODULES -->
+
+        <div class="col-md-4">
+
+            <div class="card stats-card">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Modules
+
+                            </h6>
+
+                            <h2 class="fw-bold">
+
+                                {{ modules|length }}
+
+                            </h2>
+
+                        </div>
+
+                        <i class="bi bi-book fs-1 text-primary"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MOYENNE -->
+
+        <div class="col-md-4">
+
+            <div class="card stats-card">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Moyenne
+
+                            </h6>
+
+                            <h2 class="fw-bold">
+
+                                {{ moyenne_generale }}
+
+                            </h2>
+
+                        </div>
+
+                        <i class="bi bi-bar-chart-line fs-1 text-success"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- NOTIFICATIONS -->
+
+        <div class="col-md-4">
+
+            <div class="card stats-card">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h6 class="text-muted">
+
+                                Notifications
+
+                            </h6>
+
+                            <h2 class="fw-bold">
+
+                                {{ notifications|length }}
+
+                            </h2>
+
+                        </div>
+
+                        <i class="bi bi-bell-fill fs-1 text-warning"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- MODULES -->
 
-    <div class="row g-3">
+    <h3 class="section-title">
+
+        <i class="bi bi-journal-bookmark-fill text-primary"></i>
+
+        Mes Modules
+
+    </h3>
+
+    <div class="row g-4">
 
         {% if modules %}
 
             {% for m in modules %}
 
-            <div class="col-md-4">
+            <div class="col-lg-4 col-md-6">
 
-                <div class="card module-card p-3">
+                <div class="card module-card">
 
-                    <!-- TITRE -->
+                    <!-- HEADER -->
 
-                    <h5 class="fw-bold">
+                    <div class="module-header">
 
-                        {{ m.titre }}
+                        <h5 class="fw-bold mb-0">
 
-                    </h5>
+                            {{ m.titre }}
 
+                        </h5>
 
-                    <!-- COEFFICIENT -->
+                    </div>
 
-                    <p class="text-muted mb-1">
+                    <!-- BODY -->
 
-                        Coefficient:
+                    <div class="card-body">
 
-                        <strong>
+                        <!-- ENSEIGNANT -->
 
-                            {{ m.coefficient }}
+                        <p class="text-muted mb-2">
 
-                        </strong>
+                            <i class="bi bi-person-fill"></i>
 
-                    </p>
-
-
-                    <!-- MOYENNE -->
-
-                    <p>
-
-                        Moyenne:
-
-                        {% if m.moyenne %}
-
-                            <span class="badge bg-success">
-
-                                {{ m.moyenne }}
-
-                            </span>
-
-                        {% else %}
-
-                            <span class="badge bg-secondary">
-
-                                En attente
-
-                            </span>
-
-                        {% endif %}
-
-                    </p>
-
-
-                    <!-- NOTES -->
-
-                    <h6 class="mt-3">
-
-                        Notes
-
-                    </h6>
-
-                    <ul>
-
-                        {% for note in m.notes %}
-
-                        <li>
-
-                            {{ note.categorie.nom }}
-
-                            :
-
+                            Enseignant:
                             <strong>
 
-                                {{ note.valeur }}
+                                {{ m.enseignant|default:"Non assigné" }}
 
                             </strong>
 
-                        </li>
+                        </p>
 
-                        {% empty %}
+                        <!-- COEFFICIENT -->
 
-                        <li>
+                        <p class="text-muted">
 
-                            Aucune note
+                            <i class="bi bi-calculator"></i>
 
-                        </li>
+                            Coefficient:
+                            <strong>
 
-                        {% endfor %}
+                                {{ m.coefficient }}
 
-                    </ul>
+                            </strong>
 
+                        </p>
 
-                    <!-- BOUTON -->
+                        <!-- MOYENNE -->
 
-                    <a href="{% url 'ajouter_note' m.id %}">
+                        <div class="mb-3">
 
-                        <button class="btn btn-primary w-100">
+                            <span class="fw-semibold">
+
+                                Moyenne:
+
+                            </span>
+
+                            {% if m.moyenne %}
+
+                                <span class="badge bg-success">
+
+                                    {{ m.moyenne }}
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-secondary">
+
+                                    En attente
+
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                        <!-- NOTES -->
+
+                        <h6 class="fw-bold mb-3">
+
+                            Notes
+
+                        </h6>
+
+                        <ul class="list-group mb-3">
+
+                            {% for note in m.notes %}
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                                <span>
+
+                                    {{ note.categorie.nom }}
+
+                                </span>
+
+                                <strong>
+
+                                    {{ note.valeur }}
+
+                                </strong>
+
+                            </li>
+
+                            {% empty %}
+
+                            <li class="list-group-item text-muted">
+
+                                Aucune note disponible
+
+                            </li>
+
+                            {% endfor %}
+
+                        </ul>
+
+                        <!-- BUTTON -->
+
+                        <a href="{% url 'ajouter_note' m.id %}"
+                           class="btn btn-primary w-100">
+
+                            <i class="bi bi-pencil-square me-1"></i>
 
                             Ajouter / Modifier Notes
 
-                        </button>
+                        </a>
 
-                    </a>
+                    </div>
 
                 </div>
 
@@ -208,23 +415,105 @@
 
     </div>
 
+    <!-- CHART + SIDE PANEL -->
 
-    <!-- CHART -->
+    <div class="row mt-5 g-4">
 
-    <div class="card chart-card mt-4 p-3">
+        <!-- CHART -->
 
-        <h5 class="mb-3">
+        <div class="col-lg-8">
 
-            Évolution de la Moyenne
+            <div class="card chart-card p-4">
 
-        </h5>
+                <h5 class="fw-bold mb-4">
 
-        <canvas id="chart"></canvas>
+                    <i class="bi bi-graph-up-arrow text-primary"></i>
+
+                    Évolution de la Moyenne
+
+                </h5>
+
+                <canvas id="chart"></canvas>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+
+        <div class="col-lg-4">
+
+            <!-- NOTIFICATIONS -->
+
+            <div class="card notification-card p-4 mb-4">
+
+                <h5 class="fw-bold mb-3">
+
+                    <i class="bi bi-bell-fill text-warning"></i>
+
+                    Notifications
+
+                </h5>
+
+                {% for notif in notifications %}
+
+                <div class="notification-item">
+
+                    {{ notif.message }}
+
+                </div>
+
+                {% empty %}
+
+                <p class="text-muted">
+
+                    Aucune notification
+
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+            <!-- REMARQUES -->
+
+            <div class="card notification-card p-4">
+
+                <h5 class="fw-bold mb-3">
+
+                    <i class="bi bi-chat-left-text-fill text-primary"></i>
+
+                    Remarques du Tuteur
+
+                </h5>
+
+                {% for r in remarques %}
+
+                <div class="notification-item">
+
+                    {{ r.contenu }}
+
+                </div>
+
+                {% empty %}
+
+                <p class="text-muted">
+
+                    Aucune remarque
+
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
 
     </div>
 
 </div>
 
+<!-- CHART JS -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -232,13 +521,9 @@
 
     const data = JSON.parse('{{ evolution|escapejs }}');
 
-    const labels = data.map(
-        item => item.date
-    );
+    const labels = data.map(item => item.date);
 
-    const values = data.map(
-        item => item.moyenne
-    );
+    const values = data.map(item => item.moyenne);
 
     new Chart(
 
@@ -260,13 +545,13 @@
 
                     borderColor: "#0d6efd",
 
-                    backgroundColor: "rgba(13,110,253,0.15)",
+                    backgroundColor: "rgba(13,110,253,0.1)",
 
                     fill: true,
 
                     tension: 0.4,
 
-                    pointRadius: 3
+                    pointRadius: 4
 
                 }]
 
