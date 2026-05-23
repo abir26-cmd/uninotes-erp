@@ -1,23 +1,35 @@
-<h1>
-    Ajouter Notes
-</h1>
+{% extends "base.html" %}
+
+{% load custom_tags %}
+
+{% block content %}
 
 <h2>
-    {{ module_choisi.module.titre }}
+    Ajouter / Modifier Notes
 </h2>
+
+<h3>
+    Etudiant :
+    {{ module_choisi.inscription.user.username }}
+</h3>
+
+<h3>
+    Module :
+    {{ module_choisi.module.titre }}
+</h3>
 
 <form method="POST">
 
     {% csrf_token %}
 
-    {% for cat in module_choisi.module.categories.all %}
+    {% for categorie in categories %}
 
-        <div style="margin:20px;">
+        <div style="margin-bottom:20px;">
 
             <label>
 
-                {{ cat.nom }}
-                ({{ cat.poids }}%)
+                {{ categorie.nom }}
+                ({{ categorie.poids }}%)
 
             </label>
 
@@ -28,7 +40,8 @@
                 step="0.01"
                 min="0"
                 max="20"
-                name="cat_{{ cat.id }}"
+                name="cat_{{ categorie.id }}"
+                value="{{ notes_existantes|get_item:categorie.id }}"
             >
 
         </div>
@@ -42,3 +55,5 @@
     </button>
 
 </form>
+
+{% endblock %}

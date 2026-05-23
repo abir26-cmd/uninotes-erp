@@ -5,24 +5,19 @@ from django.shortcuts import (
 )
 
 from django.contrib.auth.decorators import login_required
-
 from django.contrib import messages
+from .forms import CatalogueModuleForm
 
 from .models import CatalogueModule
 
 from enrollment.models import (
     Inscription,
     ModuleChoisi,
-    Note
 )
 
-from accounts.models import Profile
-
-
 # ====================================
-# CATALOGUE
+# CATALOGUE + RECHERCHE
 # ====================================
-
 @login_required
 def catalogue(request):
 
@@ -37,7 +32,8 @@ def catalogue(request):
         Inscription,
         user=request.user
     )
-
+    # mise à jour automatique du statut
+    inscription.verifier_verrouillage()
     modules = CatalogueModule.objects.filter(
         est_actif=True
     )
@@ -55,14 +51,12 @@ def catalogue(request):
 
     moyenne = inscription.moyenne_generale()
 
-    # étudiant sans notes
     if moyenne is None or moyenne == 0:
 
         suggestions = modules.exclude(
             id__in=modules_choisis
         )[:3]
 
-    # moyenne faible
     elif moyenne < 10:
 
         suggestions = modules.filter(
@@ -71,7 +65,6 @@ def catalogue(request):
             id__in=modules_choisis
         )[:3]
 
-    # moyenne moyenne
     elif moyenne < 14:
 
         suggestions = modules.filter(
@@ -80,7 +73,6 @@ def catalogue(request):
             id__in=modules_choisis
         )[:3]
 
-    # bonne moyenne
     else:
 
         suggestions = modules.filter(
@@ -109,11 +101,10 @@ def catalogue(request):
 
             "suggestions": suggestions,
 
-            "has_notes": inscription.has_notes()
+            
 
         }
     )
-
 
 # ====================================
 # AJOUT MODULE
@@ -124,7 +115,6 @@ def ajouter_module(request, module_id):
 
     profile = request.user.profile
 
-    # étudiant seulement
     if profile.role != "etudiant":
 
         return redirect("dashboard")
@@ -134,17 +124,8 @@ def ajouter_module(request, module_id):
         user=request.user
     )
 
-    # impossible après notes
-    if inscription.has_notes():
-
-        messages.error(
-            request,
-            "Impossible de modifier les modules après les notes"
-        )
-
-        return redirect("catalogue")
-
-    # inscription verrouillée
+    
+    # INSCRIPTION VERROUILLEE
     if inscription.statut == "verrouillee":
 
         messages.error(
@@ -159,7 +140,7 @@ def ajouter_module(request, module_id):
         id=module_id
     )
 
-    # déjà ajouté
+    # DEJA AJOUTE
     if ModuleChoisi.objects.filter(
         inscription=inscription,
         module=module
@@ -172,7 +153,7 @@ def ajouter_module(request, module_id):
 
         return redirect("catalogue")
 
-    # dépassement 60
+    # DEPASSEMENT 60
     if not inscription.can_add_module(module):
 
         messages.error(
@@ -182,13 +163,12 @@ def ajouter_module(request, module_id):
 
         return redirect("catalogue")
 
-    # ajout module
+    # AJOUT MODULE
     ModuleChoisi.objects.create(
 
         inscription=inscription,
 
         module=module
-
     )
 
     inscription.verifier_verrouillage()
@@ -219,12 +199,12 @@ def supprimer_module(request, module_id):
         user=request.user
     )
 
-    # impossible après notes
-    if inscription.has_notes():
+    # INSCRIPTION VERROUILLEE
+    if inscription.statut == "verrouillee":
 
         messages.error(
             request,
-            "Impossible après attribution des notes"
+            "Inscription verrouillée"
         )
 
         return redirect("catalogue")
@@ -239,10 +219,8 @@ def supprimer_module(request, module_id):
     )
 
     module_choisi.delete()
+    inscription.verifier_verrouillage()
 
-    inscription.statut = "ouverte"
-
-    inscription.save()
 
     messages.success(
         request,
@@ -250,3 +228,49 @@ def supprimer_module(request, module_id):
     )
 
     return redirect("catalogue")
+
+
+@login_required
+def ajouter_module_enseignant(request):
+
+    if request.user.profile.role != "enseignant":
+
+        return redirect("dashboard")
+
+    if request.method == "POST":
+
+        form = CatalogueModuleForm(request.POST)
+
+        if form.is_valid():
+
+            module = form.save(commit=False)
+
+            module.enseignant = request.user
+
+            module.save()
+
+            module = form.save(commit=False)
+            module.enseignant = request.user
+            module.save()
+
+            messages.success(
+                request,
+                "Module ajouté avec succès."
+            )
+
+            return redirect("enseignant_dashboard")
+
+    else:
+
+        form = CatalogueModuleForm()
+
+    return render(
+
+        request,
+
+        "catalog/ajouter_module_enseignant.html",
+
+        {
+            "form": form
+        }
+    )

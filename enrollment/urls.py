@@ -40,4 +40,14 @@ urlpatterns = [
     views.ajouter_suivi_tuteur,
     name='ajouter_suivi_tuteur'
 ),
+    path(
+    'mes-remarques/',
+    views.mes_remarques,
+    name='mes_remarques'
+),
+    path(
+    'export-pdf/',
+    views.export_pdf,
+    name='export_pdf'
+),
 ]

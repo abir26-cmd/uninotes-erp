@@ -101,7 +101,14 @@
                 </p>
 
             </div>
+            <a href="{% url 'export_pdf' %}"
+                class="btn btn-danger">
 
+                <i class="bi bi-file-earmark-pdf"></i>
+
+                Télécharger PDF
+
+            </a>
             <div class="text-center mt-3 mt-md-0">
 
                 <h6>
@@ -119,10 +126,10 @@
                 <!-- PROGRESS -->
 
                 <div class="progress mt-3"
-                     style="height:10px; width:200px;">
+                    style="height:10px; width:200px;">
 
                     <div class="progress-bar bg-success"
-                         style="width: {{ moyenne_generale|floatformat:0 }}0%">
+                        style="width: {{ moyenne_generale|floatformat:0 }}0%">
 
                     </div>
 
@@ -354,34 +361,45 @@
 
                         <ul class="list-group mb-3">
 
-                            {% for note in m.notes %}
+                            {% for categorie in m.categories %}
 
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
+<li class="list-group-item d-flex justify-content-between align-items-center">
 
-                                <span>
+    <span>
 
-                                    {{ note.categorie.nom }}
+        {{ categorie.nom }}
 
-                                </span>
+    </span>
 
-                                <strong>
+    <strong>
 
-                                    {{ note.valeur }}
+        {% with trouve=False %}
 
-                                </strong>
+            {% for note in m.notes %}
 
-                            </li>
+                {% if note.categorie.id == categorie.id %}
 
-                            {% empty %}
+                    {{ note.valeur }}
 
-                            <li class="list-group-item text-muted">
+                {% endif %}
 
-                                Aucune note disponible
+            {% empty %}
 
-                            </li>
+                <span class="badge bg-secondary">
 
-                            {% endfor %}
+                    En attente
 
+                </span>
+
+            {% endfor %}
+
+        {% endwith %}
+
+    </strong>
+
+</li>
+
+{% endfor %}
                         </ul>
 
                         <!-- BUTTON -->
@@ -512,7 +530,21 @@
     </div>
 
 </div>
+<div class="card shadow border-0 mt-4">
 
+    <div class="card-body">
+
+        <h5 class="fw-bold mb-4">
+
+            Evolution des performances
+
+        </h5>
+
+        <canvas id="evolutionChart"></canvas>
+
+    </div>
+
+</div>
 <!-- CHART JS -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -589,5 +621,45 @@
     );
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<script>
+
+const evolutionData = JSON.parse('{{ evolution|escapejs }}')
+
+const labels = evolutionData.map(
+    item => item.date
+)
+
+const data = evolutionData.map(
+    item => item.moyenne
+)
+
+const ctx = document.getElementById(
+    'evolutionChart'
+)
+
+new Chart(ctx, {
+
+    type: 'line',
+
+    data: {
+
+        labels: labels,
+
+        datasets: [{
+
+            label: 'Evolution Moyenne',
+
+            data: data,
+
+            tension: 0.4,
+
+            fill: true
+
+        }]
+    }
+})
+
+</script>
 {% endblock %}

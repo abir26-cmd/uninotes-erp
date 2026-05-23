@@ -1,7 +1,7 @@
 from django.db import models
 
 from django.contrib.auth.models import User
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class CatalogueModule(models.Model):
 
@@ -9,7 +9,15 @@ class CatalogueModule(models.Model):
         max_length=200
     )
 
-    coefficient = models.PositiveIntegerField()
+    coefficient = models.PositiveIntegerField(
+        validators=[
+
+            MinValueValidator(1),
+
+            MaxValueValidator(60)
+
+    ]
+    )
 
     description = models.TextField(
         blank=True

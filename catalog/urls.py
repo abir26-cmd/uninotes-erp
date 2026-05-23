@@ -1,5 +1,7 @@
 from django.urls import path
 
+from accounts import views
+
 from .views import (
     catalogue,
     ajouter_module,
@@ -25,4 +27,9 @@ urlpatterns = [
         supprimer_module,
         name="supprimer_module"
     ),
+path(
+    "ajouter-module-enseignant/",
+    views.ajouter_module_enseignant,
+    name="ajouter_module_enseignant"
+),
 ]

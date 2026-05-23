@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="card shadow">
+
+        <div class="card-body">
+
+            <h2>
+
+                Ajouter Catégorie
+
+            </h2>
+
+            <h4>
+
+                Module :
+                {{ module.titre }}
+
+            </h4>
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <div class="mb-3">
+
+                    <label>
+
+                        Nom
+
+                    </label>
+
+                    <input
+                        type="text"
+                        name="nom"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label>
+
+                        Poids %
+
+                    </label>
+
+                    <input
+                        type="number"
+                        name="poids"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+                <button class="btn btn-primary">
+
+                    Ajouter
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

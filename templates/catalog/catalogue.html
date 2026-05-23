@@ -222,14 +222,14 @@
 
                 {% if module.id in modules_choisis %}
 
-                    {% if has_notes %}
+                    {% if statut == "verrouillee" %}
 
                         <button
                             class="btn btn-secondary w-100"
                             disabled
                         >
 
-                            Verrouillé après notes
+                            Verrouillé 
 
                         </button>
 

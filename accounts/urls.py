@@ -10,7 +10,15 @@ from .views import (
 
     tutor_dashboard,
 
-    enseignant_dashboard
+    enseignant_dashboard,
+
+    ajouter_module_enseignant,
+
+    modifier_module_enseignant,
+
+    supprimer_module_enseignant,
+    
+    ajouter_categorie,
 )
 
 urlpatterns = [
@@ -44,4 +52,28 @@ urlpatterns = [
         enseignant_dashboard,
         name="enseignant_dashboard"
     ),
+
+    path(
+        "ajouter-module-enseignant/",
+        ajouter_module_enseignant,
+        name="ajouter_module_enseignant"
+    ),
+
+    path(
+        "modifier-module/<int:module_id>/",
+        modifier_module_enseignant,
+        name="modifier_module_enseignant"
+    ),
+
+    path(
+        "supprimer-module/<int:module_id>/",
+        supprimer_module_enseignant,
+        name="supprimer_module_enseignant"
+    ),
+    path(
+    "ajouter-categorie/<int:module_id>/",
+    ajouter_categorie,
+    name="ajouter_categorie"
+    ),
+
 ]

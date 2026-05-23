@@ -78,7 +78,7 @@
             <!-- LOGO -->
 
             <a class="navbar-brand fw-bold d-flex align-items-center gap-2"
-               href="#">
+               href="{% url 'dashboard' %}">
 
                 <i class="bi bi-mortarboard-fill"></i>
 
@@ -136,6 +136,19 @@
 
                         </li>
 
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'mes_remarques' %}">
+
+                                <i class="bi bi-chat-left-text me-1"></i>
+
+                                Mes Remarques
+
+                            </a>
+
+                        </li>
+
                         {% endif %}
 
                         <!-- TUTEUR -->
@@ -150,6 +163,38 @@
                                 <i class="bi bi-person-workspace me-1"></i>
 
                                 Tutor Dashboard
+
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'ajouter_suivi_tuteur' %}">
+
+                                <i class="bi bi-journal-text me-1"></i>
+
+                                Ajouter Suivi
+
+                            </a>
+
+                        </li>
+
+                        {% endif %}
+
+                        <!-- ENSEIGNANT -->
+
+                        {% if user.profile.role == "enseignant" %}
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="{% url 'ajouter_remarque' %}">
+
+                                <i class="bi bi-pencil-square me-1"></i>
+
+                                Ajouter Remarque
 
                             </a>
 
@@ -233,6 +278,8 @@
 
                                             {{ notif.created_at|timesince }}
 
+                                            ago
+
                                         </small>
 
                                     </a>
@@ -302,8 +349,6 @@
 
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2">
 
-                                <!-- PROFILE -->
-
                                 <li>
 
                                     <a class="dropdown-item rounded"
@@ -316,8 +361,6 @@
                                     </a>
 
                                 </li>
-
-                                <!-- SETTINGS -->
 
                                 <li>
 
@@ -337,8 +380,6 @@
                                     <hr class="dropdown-divider">
 
                                 </li>
-
-                                <!-- LOGOUT -->
 
                                 <li>
 
@@ -428,7 +469,6 @@
         <div class="container-box">
 
             {% block content %}
-
             {% endblock %}
 
         </div>

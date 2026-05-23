@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <h2 class="fw-bold mb-4">
+        Mes Remarques
+    </h2>
+
+    <!-- REMARQUES ENSEIGNANTS -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header bg-primary text-white fw-bold">
+
+            Remarques Enseignants
+
+        </div>
+
+        <div class="card-body">
+
+            {% for r in remarques_enseignants %}
+
+                <div class="border-bottom pb-3 mb-3">
+
+                    <h6 class="fw-bold">
+
+                        {{ r.module.titre }}
+
+                    </h6>
+
+                    <p class="mb-1">
+
+                        {{ r.contenu }}
+
+                    </p>
+
+                    <small class="text-muted">
+
+                        Enseignant:
+                        {{ r.enseignant.username }}
+
+                        |
+                        {{ r.created_at }}
+
+                    </small>
+
+                </div>
+
+            {% empty %}
+
+                <p class="text-muted">
+
+                    Aucune remarque disponible.
+
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- SUIVI TUTEUR -->
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-success text-white fw-bold">
+
+            Suivi Tuteur
+
+        </div>
+
+        <div class="card-body">
+
+            {% for s in suivis_tuteur %}
+
+                <div class="border-bottom pb-3 mb-3">
+
+                    <p class="mb-1">
+
+                        {{ s.remarque }}
+
+                    </p>
+
+                    <small class="text-muted">
+
+                        Tuteur:
+                        {{ s.tuteur.username }}
+
+                        |
+                        {{ s.created_at }}
+
+                    </small>
+
+                </div>
+
+            {% empty %}
+
+                <p class="text-muted">
+
+                    Aucun suivi disponible.
+
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
