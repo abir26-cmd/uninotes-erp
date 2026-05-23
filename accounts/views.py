@@ -1,18 +1,23 @@
 from django.shortcuts import (
+    #send template to browser
     render,
+    #display the html page of the url
     redirect
 )
-
+# user predefined model in django 
 from django.contrib.auth.models import User
 
 from django.contrib.auth import (
+    # authenticate user
     authenticate,
+    #stay connected
     login,
+    #close session
     logout
 )
-
+#empêcher l'accès à une page sans être connecté
 from django.contrib.auth.decorators import login_required
-
+#messages d'erreur ou de succès
 from django.contrib import messages
 
 from .models import Profile
@@ -24,16 +29,16 @@ from enrollment.models import (
 
 
 # =========================================
-# REGISTER
+# REGISTER /signup
 # =========================================
 
 def register_view(request):
 
-    # جميع التuteurs
+    # récupérer tuteurs pour le dropdown
     tuteurs = Profile.objects.filter(
         role="tuteur"
     )
-
+    # if user submit the form
     if request.method == "POST":
 
         username = request.POST.get("username")
@@ -51,7 +56,7 @@ def register_view(request):
                 request,
                 "Tous les champs sont obligatoires"
             )
-
+            #reload the page
             return redirect("register")
 
         # username déjà utilisé
