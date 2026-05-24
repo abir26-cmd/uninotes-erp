@@ -1,6 +1,20 @@
 from django.db import models
+
 from django.contrib.auth.models import User
+
 from django.core.exceptions import ValidationError
+
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator
+)
+
+from django.db.models import (
+    Sum,
+    F,
+    DecimalField,
+    ExpressionWrapper
+)
 
 from catalog.models import (
     CatalogueModule,
@@ -8,8 +22,6 @@ from catalog.models import (
 )
 
 from decimal import Decimal
-
-from django.shortcuts import render
 
 
 # =====================================================
@@ -23,9 +35,14 @@ class Inscription(models.Model):
         ('verrouillee', 'Verrouillée'),
     )
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='inscriptions'
+    )
+
+    annee_academique = models.CharField(
+        max_length=20
     )
 
     statut = models.CharField(
@@ -34,9 +51,19 @@ class Inscription(models.Model):
         default='ouverte'
     )
 
+    class Meta:
+
+        unique_together = (
+            'user',
+            'annee_academique'
+        )
+
     def __str__(self):
 
-        return self.user.username
+        return (
+            f"{self.user.username} - "
+            f"{self.annee_academique}"
+        )
 
     # =========================
     # TOTAL COEFFICIENT
@@ -44,11 +71,15 @@ class Inscription(models.Model):
 
     def total_coefficient(self):
 
-        return sum(
+        total = self.modules.aggregate(
 
-            item.module.coefficient
-            for item in self.modules.all()
-        )
+            total=Sum(
+                'module__coefficient'
+            )
+
+        )['total']
+
+        return total or 0
 
     # =========================
     # RESTE
@@ -64,6 +95,10 @@ class Inscription(models.Model):
 
     def can_add_module(self, module):
 
+        if self.statut == 'verrouillee':
+
+            return False
+
         nouveau_total = (
             self.total_coefficient()
             + module.coefficient
@@ -74,9 +109,10 @@ class Inscription(models.Model):
     # =========================
     # VERROUILLAGE
     # =========================
+
     def verifier_verrouillage(self):
-    
-        if self.total_coefficient() >= 60:
+
+        if self.total_coefficient() == 60:
 
             self.statut = "verrouillee"
 
@@ -86,69 +122,47 @@ class Inscription(models.Model):
 
         self.save()
 
-        # =========================
-        # MOYENNE GENERALE
-        # =========================
+    # =========================
+    # MOYENNE GENERALE
+    # =========================
 
     def moyenne_generale(self):
 
-        modules = self.modules.all()
+        total_points = Decimal('0')
 
-        total = Decimal('0')
+        total_coefficients = Decimal('0')
+
+        modules = self.modules.select_related(
+            'module'
+        )
 
         for item in modules:
 
             moyenne_module = item.moyenne()
 
             if moyenne_module is None:
-
                 continue
 
-            total += (
-                Decimal(str(moyenne_module))
-                * Decimal(str(item.module.coefficient))
+            coefficient = Decimal(
+                str(item.module.coefficient)
             )
 
-            return total / Decimal('60')
+            total_points += (
+                Decimal(str(moyenne_module))
+                * coefficient
+            )
 
-    # =========================
-    # HAS NOTES
-    # =========================
+            total_coefficients += coefficient
 
-    def has_notes(self):
+        if total_coefficients == 0:
 
-        return Note.objects.filter(
+            return Decimal('0')
 
-            module_choisi__inscription=self
+        return round(
 
-        ).exists()
+            total_points / total_coefficients,
 
-    # =========================
-    # DASHBOARD
-    # =========================
-
-    def dashboard(request):
-
-        inscription = Inscription.objects.get(
-            user=request.user
-        )
-
-        modules = inscription.modules.all()
-
-        context = {
-
-            "inscription": inscription,
-
-            "modules": modules,
-
-            "moyenne_generale":
-            inscription.moyenne_generale()
-        }
-
-        return render(
-            request,
-            "dashboard.html",
-            context
+            2
         )
 
 
@@ -186,12 +200,35 @@ class ModuleChoisi(models.Model):
 
     def clean(self):
 
+        if self.inscription.statut == 'verrouillee':
+
+            raise ValidationError(
+                "Votre inscription est verrouillée."
+            )
+
         if not self.inscription.can_add_module(
             self.module
         ):
 
+            total = (
+                self.inscription
+                .total_coefficient()
+            )
+
+            nouveau_total = (
+                total
+                + self.module.coefficient
+            )
+
             raise ValidationError(
-                "Impossible : dépassement de 60 points"
+
+                f"Impossible d’ajouter "
+                f"{self.module.titre} "
+                f"(coefficient : "
+                f"{self.module.coefficient}). "
+                f"Total actuel : {total}. "
+                f"Le total deviendrait "
+                f"{nouveau_total}/60."
             )
 
     # =========================
@@ -200,54 +237,79 @@ class ModuleChoisi(models.Model):
 
     def save(self, *args, **kwargs):
 
-        total = self.inscription.total_coefficient()
-
-        # nouveau module seulement
-        if not self.pk:
-
-            nouveau_total = (
-                total
-                + self.module.coefficient
-            )
-
-            if nouveau_total > 60:
-
-                raise ValidationError(
-                    "Impossible : dépassement de 60 points"
-                )
+        self.full_clean()
 
         super().save(*args, **kwargs)
 
-        # verrouillage auto
         self.inscription.verifier_verrouillage()
 
+    # =========================
+    # DELETE
+    # =========================
+
+    def delete(self, *args, **kwargs):
+
+        inscription = self.inscription
+
+        super().delete(*args, **kwargs)
+
+        inscription.verifier_verrouillage()
 
     # =========================
     # MOYENNE MODULE
     # =========================
-    
-    
-    def moyenne(self):
-    
-        notes = self.notes.all()
 
-        total_categories = self.module.categories.count()
+    def moyenne(self, type_note='officielle'):
 
-        # toutes les notes pas encore saisies
+        total_categories = (
+            self.module.categories.count()
+        )
+
+        notes = self.notes.filter(
+            type_note=type_note
+        )
+
         if notes.count() < total_categories:
 
             return None
 
-        total = Decimal('0')
+        result = notes.aggregate(
 
-        for note in notes:
+            moyenne=Sum(
 
-            total += (
-                Decimal(str(note.valeur))
-                * Decimal(str(note.categorie.poids))
+                ExpressionWrapper(
+
+                    F('valeur')
+                    * F('categorie__poids'),
+
+                    output_field=DecimalField(
+                        max_digits=10,
+                        decimal_places=2
+                    )
+                )
             )
+        )
 
-        return total / Decimal('100')
+        total = result['moyenne']
+
+        if total is None:
+
+            return None
+
+        return round(
+            total / Decimal('100'),
+            2
+        )
+
+    # =========================
+    # MOYENNE ESTIMATION
+    # =========================
+
+    def moyenne_estimation(self):
+
+        return self.moyenne(
+            type_note='estimation'
+        )
 
 
 # =====================================================
@@ -256,18 +318,51 @@ class ModuleChoisi(models.Model):
 
 class Note(models.Model):
 
+    TYPE_NOTE = (
+
+        ('officielle', 'Officielle'),
+
+        ('estimation', 'Estimation'),
+    )
+
     module_choisi = models.ForeignKey(
+
         ModuleChoisi,
+
         on_delete=models.CASCADE,
+
         related_name='notes'
     )
 
     categorie = models.ForeignKey(
+
         CategorieEvaluation,
+
         on_delete=models.CASCADE
     )
 
-    valeur = models.FloatField()
+    valeur = models.DecimalField(
+
+        max_digits=4,
+
+        decimal_places=2,
+
+        validators=[
+
+            MinValueValidator(0),
+
+            MaxValueValidator(20)
+        ]
+    )
+
+    type_note = models.CharField(
+
+        max_length=20,
+
+        choices=TYPE_NOTE,
+
+        default='officielle'
+    )
 
     date_saisie = models.DateTimeField(
         auto_now_add=True
@@ -275,25 +370,21 @@ class Note(models.Model):
 
     class Meta:
 
-        unique_together = (
-            'module_choisi',
-            'categorie'
-        )
-
-    def clean(self):
-
-        if self.valeur < 0 or self.valeur > 20:
-
-            raise ValidationError(
-                "La note doit être entre 0 et 20"
-            )
+        ordering = ['date_saisie']
 
     def __str__(self):
 
         return (
             f"{self.module_choisi} - "
-            f"{self.categorie}"
+            f"{self.categorie} - "
+            f"{self.type_note}"
         )
+
+    def save(self, *args, **kwargs):
+
+        self.full_clean()
+
+        super().save(*args, **kwargs)
 
 
 # =====================================================
@@ -387,4 +478,7 @@ class SuiviTuteur(models.Model):
 
     def __str__(self):
 
-        return f"Suivi - {self.etudiant.username}"
+        return (
+            f"Suivi - "
+            f"{self.etudiant.username}"
+        )

@@ -1,9 +1,9 @@
-# uninotes-erp
+````md id="d8s92"
 # 🎓 UniNotes ERP
 
 UniNotes ERP est une plateforme intelligente de gestion universitaire développée avec Django.
 
-L’application permet aux étudiants, enseignants et tuteurs de gérer les activités académiques à travers une interface moderne et intuitive.
+L’application permet aux étudiants, enseignants, tuteurs et administrateurs de gérer efficacement les activités académiques à travers une interface moderne, intuitive et dynamique.
 
 ---
 
@@ -11,38 +11,76 @@ L’application permet aux étudiants, enseignants et tuteurs de gérer les acti
 
 ## 👨‍🎓 Étudiant
 
-- Authentification
+- Authentification sécurisée
 - Tableau de bord personnalisé
-- Gestion des modules
-- Calcul automatique de moyenne
-- Gestion des notes
-- Notifications
+- Consultation des modules inscrits
+- Gestion des estimations de notes
+- Calcul automatique des moyennes
+- Suivi de l’évolution académique
+- Notifications intelligentes
+- Export PDF du relevé de notes
 - Gestion du profil
 
 ---
 
 ## 👨‍🏫 Enseignant
 
+- Gestion des notes officielles
+- Gestion des catégories d’évaluation
 - Ajout de remarques pédagogiques
-- Suivi des étudiants
-- Gestion des évaluations
-- Consultation des modules assignés
+- Consultation des étudiants
+- Tableau de bord dédié
 
 ---
 
 ## 👨‍💼 Tuteur
 
 - Suivi pédagogique des étudiants
-- Ajout de remarques
-- Tableau de bord dédié
+- Consultation des performances académiques
+- Ajout de remarques et suivis
+- Tableau de bord personnalisé
 
 ---
 
-## 🔔 Notifications
+## 👨‍💻 Administrateur
 
+- Gestion complète des utilisateurs
+- Gestion des modules
+- Gestion des catégories d’évaluation
+- Gestion des inscriptions académiques
+
+---
+
+# 📊 Fonctionnalités intelligentes
+
+## ✅ Dashboard dynamique
+
+- Statistiques académiques
+- Moyenne générale en temps réel
+- Visualisation graphique avec Chart.js
+- Évolution des notes réelles et estimées
 - Notifications académiques
-- Alertes des nouvelles notes
-- Alertes des remarques
+
+---
+
+## ✅ Gestion académique avancée
+
+- Inscription annuelle des étudiants
+- Gestion des modules et coefficients
+- Gestion des catégories d’évaluation
+- Calcul automatique des moyennes pondérées
+- Gestion des notes officielles et estimations
+
+---
+
+## ✅ Gestion des rôles
+
+Interfaces et permissions spécifiques pour :
+
+- Étudiants
+- Enseignants
+- Tuteurs
+- Administrateurs
 
 ---
 
@@ -52,9 +90,11 @@ L’application permet aux étudiants, enseignants et tuteurs de gérer les acti
 - Django
 - Bootstrap 5
 - SQLite
-- HTML / CSS
+- HTML5
+- CSS3
 - JavaScript
 - Chart.js
+- ReportLab
 
 ---
 
@@ -68,14 +108,15 @@ uninotes_erp/
 ├── enrollment/
 ├── templates/
 ├── static/
-└── manage.py
-```
+├── manage.py
+└── requirements.txt
+````
 
 ---
 
 # ⚙️ Installation
 
-## 1. Cloner le projet
+## 1️⃣ Cloner le projet
 
 ```bash
 git clone <repository_link>
@@ -83,7 +124,7 @@ git clone <repository_link>
 
 ---
 
-## 2. Créer un environnement virtuel
+## 2️⃣ Créer un environnement virtuel
 
 ```bash
 python -m venv venv
@@ -91,7 +132,7 @@ python -m venv venv
 
 ---
 
-## 3. Activer l’environnement virtuel
+## 3️⃣ Activer l’environnement virtuel
 
 ### Windows
 
@@ -107,7 +148,7 @@ source venv/bin/activate
 
 ---
 
-## 4. Installer les dépendances
+## 4️⃣ Installer les dépendances
 
 ```bash
 pip install -r requirements.txt
@@ -115,7 +156,7 @@ pip install -r requirements.txt
 
 ---
 
-## 5. Appliquer les migrations
+## 5️⃣ Appliquer les migrations
 
 ```bash
 python manage.py makemigrations
@@ -124,7 +165,7 @@ python manage.py migrate
 
 ---
 
-## 6. Créer un administrateur
+## 6️⃣ Créer un super utilisateur
 
 ```bash
 python manage.py createsuperuser
@@ -132,7 +173,7 @@ python manage.py createsuperuser
 
 ---
 
-## 7. Lancer le serveur
+## 7️⃣ Lancer le serveur
 
 ```bash
 python manage.py runserver
@@ -140,45 +181,34 @@ python manage.py runserver
 
 ---
 
-# 📊 Fonctionnalités principales
+# 📈 Fonctionnalités visuelles
 
-## ✅ Dashboard intelligent
-
-- Statistiques dynamiques
-- Évolution de moyenne
-- Notifications
-- Vue globale des modules
-
----
-
-## ✅ Gestion académique
-
-- Inscription aux modules
-- Gestion des coefficients
-- Gestion des catégories d’évaluation
-- Calcul automatique des moyennes
+* Courbes d’évolution des notes
+* Dashboard responsive
+* Cartes statistiques modernes
+* Interface utilisateur intuitive
+* Design Bootstrap moderne
 
 ---
 
-## ✅ Gestion des rôles
+# 🔐 Sécurité & Permissions
 
-Interfaces différentes pour :
-
-- Étudiants
-- Enseignants
-- Tuteurs
-- Administrateurs
+* Authentification sécurisée
+* Gestion des rôles
+* Contrôle d’accès par utilisateur
+* Protection des vues sensibles
 
 ---
 
 # 🔥 Améliorations futures
 
-- Export PDF
-- Notifications email
-- API REST
-- Dark mode
-- Application mobile
-- Assistant IA
+* API REST avec Django REST Framework
+* Notifications email
+* Système IA de recommandation académique
+* Dark mode
+* Application mobile
+* Export Excel
+* Analyse prédictive des performances
 
 ---
 
@@ -186,10 +216,14 @@ Interfaces différentes pour :
 
 Développé par :
 
-- Ton Nom
+sfaxi abir
+
+Dans le cadre d’un projet académique ERP universitaire.
 
 ---
 
 # 📜 Licence
 
-Projet développé dans un cadre académique.
+Projet développé dans un cadre académique et éducatif.
+
+

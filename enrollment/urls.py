@@ -50,4 +50,11 @@ urlpatterns = [
     views.export_pdf,
     name='export_pdf'
 ),
+    
+    path(
+    'estimation/<int:module_id>/',
+    views.ajouter_estimation,
+    name='ajouter_estimation'
+),
+    
 ]

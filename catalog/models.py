@@ -1,7 +1,14 @@
 from django.db import models
 
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator
+)
+
+from django.core.exceptions import ValidationError
+
 
 class CatalogueModule(models.Model):
 
@@ -10,13 +17,13 @@ class CatalogueModule(models.Model):
     )
 
     coefficient = models.PositiveIntegerField(
+
         validators=[
 
             MinValueValidator(1),
 
             MaxValueValidator(60)
-
-    ]
+        ]
     )
 
     description = models.TextField(
@@ -26,8 +33,6 @@ class CatalogueModule(models.Model):
     est_actif = models.BooleanField(
         default=True
     )
-
-    # enseignant responsable
 
     enseignant = models.ForeignKey(
 
@@ -40,14 +45,39 @@ class CatalogueModule(models.Model):
         blank=True,
 
         related_name='modules_enseignes'
-    )    
+    )
+
+    # =========================
+    # VALIDATION
+    # =========================
+
+    def clean(self):
+
+        if self.enseignant:
+
+            if not hasattr(self.enseignant, 'profile'):
+
+                raise ValidationError(
+                    "Enseignant invalide."
+                )
+
+            if self.enseignant.profile.role != "enseignant":
+
+                raise ValidationError(
+                    "Utilisateur non enseignant."
+                )
+
     def __str__(self):
 
         return self.titre
 
 
-class CategorieEvaluation(models.Model):
+# =====================================================
+# CATEGORIE EVALUATION
+# =====================================================
 
+class CategorieEvaluation(models.Model):
+    
     module = models.ForeignKey(
 
         CatalogueModule,
@@ -71,3 +101,37 @@ class CategorieEvaluation(models.Model):
     def __str__(self):
 
         return f"{self.nom} - {self.module.titre}"
+
+    # =========================
+    # VALIDATION POIDS
+    # =========================
+
+    def clean(self):
+
+        total = sum(
+
+            c.poids
+            for c in self.module.categories.exclude(
+                id=self.id
+            )
+        )
+
+        total += self.poids
+
+        if total > 100:
+
+            raise ValidationError(
+                "Le total des catégories dépasse 100%"
+            )
+
+    # =========================
+    # SAVE
+    # =========================
+
+    def save(self, *args, **kwargs):
+
+        self.full_clean()
+
+        super().save(*args, **kwargs)   
+    
+    

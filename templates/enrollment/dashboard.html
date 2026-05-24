@@ -3,663 +3,600 @@
 {% block content %}
 
 <style>
+  .welcome-card {
+    background: linear-gradient(135deg, #0d6efd, #4f8cff);
+    border-radius: 24px;
+    padding: 35px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
+  }
 
-    .welcome-card {
-        background: linear-gradient(135deg, #0d6efd, #4f8cff);
-        border-radius: 24px;
-        padding: 35px;
-        color: white;
-        box-shadow: 0 10px 30px rgba(13,110,253,0.25);
-    }
+  .stats-card {
+    border: none;
+    border-radius: 20px;
+    padding: 20px;
+    transition: 0.3s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    height: 100%;
+  }
 
-    .stats-card {
-        border: none;
-        border-radius: 20px;
-        padding: 20px;
-        transition: 0.3s;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-        height: 100%;
-    }
+  .stats-card:hover {
+    transform: translateY(-5px);
+  }
 
-    .stats-card:hover {
-        transform: translateY(-5px);
-    }
+  .module-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: 0.3s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    height: 100%;
+  }
 
-    .module-card {
-        border: none;
-        border-radius: 20px;
-        overflow: hidden;
-        transition: 0.3s;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-        height: 100%;
-    }
+  .module-card:hover {
+    transform: translateY(-6px);
+  }
 
-    .module-card:hover {
-        transform: translateY(-6px);
-    }
+  .module-header {
+    background: linear-gradient(135deg, #0d6efd, #3d84ff);
+    color: white;
+    padding: 15px;
+  }
 
-    .module-header {
-        background: linear-gradient(135deg, #0d6efd, #3d84ff);
-        color: white;
-        padding: 15px;
-    }
+  .section-title {
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
 
-    .section-title {
-        font-weight: 700;
-        margin-bottom: 20px;
-    }
+  .list-group-item {
+    border: none;
+    border-bottom: 1px solid #f1f1f1;
+  }
 
-    .chart-card,
-    .notification-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-    }
+  .progress {
+    border-radius: 20px;
+    overflow: hidden;
+  }
 
-    .notification-item {
-        padding: 12px 0;
-        border-bottom: 1px solid #eee;
-    }
-
-    .notification-item:last-child {
-        border-bottom: none;
-    }
-
-    .progress {
-        border-radius: 20px;
-        overflow: hidden;
-    }
-
-    .list-group-item {
-        border: none;
-        border-bottom: 1px solid #f1f1f1;
-    }
-
+  #evolutionChart {
+    max-height: 400px;
+  }
 </style>
 
-<div class="container py-2">
+<div class="container py-3">
 
-    <!-- WELCOME CARD -->
+  <!-- WELCOME -->
 
-    <div class="welcome-card mb-4">
+  <div class="welcome-card mb-4">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+
+      <div>
+
+        <h2 class="fw-bold mb-2">
+          Welcome back,
+          {{ user.first_name|default:user.username }} 👋
+        </h2>
+
+        <p class="mb-0">
+          Suivi académique intelligent et gestion des performances.
+        </p>
+
+        <p class="mt-2 mb-0">
+          Année académique :
+          <strong>{{ inscription.annee_academique }}</strong>
+        </p>
+
+      </div>
+
+      <div class="text-center mt-3 mt-md-0">
+
+        <h6>Moyenne Générale</h6>
+
+        <h1 class="fw-bold">
+          {{ moyenne_generale|floatformat:2 }}
+        </h1>
+
+        <div class="progress mt-3"
+             style="height:10px; width:200px;">
+
+          <div class="progress-bar bg-success"
+               style="width: {{ moyenne_generale|floatformat:0 }}0%">
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- STATS -->
+
+  <div class="row g-4 mb-5">
+
+    <div class="col-md-4">
+
+      <div class="card stats-card">
+
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-center">
 
             <div>
 
-                <h2 class="fw-bold mb-2">
+              <h6 class="text-muted">
+                Modules
+              </h6>
 
-                    Welcome back,
-                    {{ user.first_name|default:user.username }} 👋
-
-                </h2>
-
-                <p class="mb-0">
-
-                    Suivi académique intelligent et gestion des performances.
-
-                </p>
+              <h2 class="fw-bold">
+                {{ modules|length }}
+              </h2>
 
             </div>
-            <a href="{% url 'export_pdf' %}"
-                class="btn btn-danger">
 
-                <i class="bi bi-file-earmark-pdf"></i>
+            <i class="bi bi-book fs-1 text-primary"></i>
 
-                Télécharger PDF
-
-            </a>
-            <div class="text-center mt-3 mt-md-0">
-
-                <h6>
-
-                    Moyenne Générale
-
-                </h6>
-
-                <h1 class="fw-bold">
-
-                    {{ moyenne_generale }}
-
-                </h1>
-
-                <!-- PROGRESS -->
-
-                <div class="progress mt-3"
-                    style="height:10px; width:200px;">
-
-                    <div class="progress-bar bg-success"
-                        style="width: {{ moyenne_generale|floatformat:0 }}0%">
-
-                    </div>
-
-                </div>
-
-            </div>
+          </div>
 
         </div>
+
+      </div>
 
     </div>
 
-    <!-- STATS -->
+    <div class="col-md-4">
 
-    <div class="row g-4 mb-4">
+      <div class="card stats-card">
 
-        <!-- MODULES -->
+        <div class="card-body">
 
-        <div class="col-md-4">
+          <div class="d-flex justify-content-between align-items-center">
 
-            <div class="card stats-card">
+            <div>
 
-                <div class="card-body">
+              <h6 class="text-muted">
+                Moyenne
+              </h6>
 
-                    <div class="d-flex justify-content-between align-items-center">
-
-                        <div>
-
-                            <h6 class="text-muted">
-
-                                Modules
-
-                            </h6>
-
-                            <h2 class="fw-bold">
-
-                                {{ modules|length }}
-
-                            </h2>
-
-                        </div>
-
-                        <i class="bi bi-book fs-1 text-primary"></i>
-
-                    </div>
-
-                </div>
+              <h2 class="fw-bold">
+                {{ moyenne_generale|floatformat:2 }}
+              </h2>
 
             </div>
 
-        </div>
+            <i class="bi bi-bar-chart-line fs-1 text-success"></i>
 
-        <!-- MOYENNE -->
-
-        <div class="col-md-4">
-
-            <div class="card stats-card">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between align-items-center">
-
-                        <div>
-
-                            <h6 class="text-muted">
-
-                                Moyenne
-
-                            </h6>
-
-                            <h2 class="fw-bold">
-
-                                {{ moyenne_generale }}
-
-                            </h2>
-
-                        </div>
-
-                        <i class="bi bi-bar-chart-line fs-1 text-success"></i>
-
-                    </div>
-
-                </div>
-
-            </div>
+          </div>
 
         </div>
 
-        <!-- NOTIFICATIONS -->
-
-        <div class="col-md-4">
-
-            <div class="card stats-card">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between align-items-center">
-
-                        <div>
-
-                            <h6 class="text-muted">
-
-                                Notifications
-
-                            </h6>
-
-                            <h2 class="fw-bold">
-
-                                {{ notifications|length }}
-
-                            </h2>
-
-                        </div>
-
-                        <i class="bi bi-bell-fill fs-1 text-warning"></i>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
+      </div>
 
     </div>
 
-    <!-- MODULES -->
+    <div class="col-md-4">
 
-    <h3 class="section-title">
+      <div class="card stats-card">
 
-        <i class="bi bi-journal-bookmark-fill text-primary"></i>
+        <div class="card-body">
 
-        Mes Modules
+          <div class="d-flex justify-content-between align-items-center">
 
-    </h3>
+            <div>
 
-    <div class="row g-4">
+              <h6 class="text-muted">
+                Notifications
+              </h6>
 
-        {% if modules %}
+              <h2 class="fw-bold">
+                {{ notifications|length }}
+              </h2>
 
-            {% for m in modules %}
+            </div>
 
-            <div class="col-lg-4 col-md-6">
+            <i class="bi bi-bell-fill fs-1 text-warning"></i>
 
-                <div class="card module-card">
+          </div>
 
-                    <!-- HEADER -->
+        </div>
 
-                    <div class="module-header">
+      </div>
 
-                        <h5 class="fw-bold mb-0">
+    </div>
 
-                            {{ m.titre }}
+  </div>
 
-                        </h5>
+  <!-- EXPORT PDF -->
 
-                    </div>
+  <div class="mb-4">
 
-                    <!-- BODY -->
+    <a href="{% url 'export_pdf' %}"
+       class="btn btn-danger">
 
-                    <div class="card-body">
+      <i class="bi bi-file-earmark-pdf"></i>
 
-                        <!-- ENSEIGNANT -->
+      Export PDF
 
-                        <p class="text-muted mb-2">
+    </a>
 
-                            <i class="bi bi-person-fill"></i>
+  </div>
 
-                            Enseignant:
-                            <strong>
+  <!-- MODULES -->
 
-                                {{ m.enseignant|default:"Non assigné" }}
+  <h3 class="section-title">
 
-                            </strong>
+    <i class="bi bi-journal-bookmark-fill text-primary"></i>
 
-                        </p>
+    Mes Modules
 
-                        <!-- COEFFICIENT -->
+  </h3>
 
-                        <p class="text-muted">
+  <div class="row g-4 mb-5">
 
-                            <i class="bi bi-calculator"></i>
+    {% for m in modules %}
 
-                            Coefficient:
-                            <strong>
+      <div class="col-lg-4 col-md-6">
 
-                                {{ m.coefficient }}
+        <div class="card module-card">
 
-                            </strong>
+          <!-- HEADER -->
 
-                        </p>
+          <div class="module-header">
 
-                        <!-- MOYENNE -->
+            <h5 class="fw-bold mb-0">
+              {{ m.titre }}
+            </h5>
 
-                        <div class="mb-3">
+          </div>
 
-                            <span class="fw-semibold">
+          <!-- BODY -->
 
-                                Moyenne:
+          <div class="card-body">
 
-                            </span>
+            <p class="text-muted mb-2">
 
-                            {% if m.moyenne %}
+              <i class="bi bi-calculator"></i>
 
-                                <span class="badge bg-success">
+              Coefficient :
+              <strong>{{ m.coefficient }}</strong>
 
-                                    {{ m.moyenne }}
+            </p>
 
-                                </span>
+            <!-- MOYENNES -->
 
-                            {% else %}
+            <div class="mb-4">
 
-                                <span class="badge bg-secondary">
+              <p class="mb-2">
 
-                                    En attente
+                <strong>Moyenne réelle :</strong>
 
-                                </span>
+                {% if m.moyenne %}
 
-                            {% endif %}
+                  <span class="badge bg-success">
+                    {{ m.moyenne|floatformat:2 }}
+                  </span>
 
-                        </div>
+                {% else %}
 
-                        <!-- NOTES -->
-
-                        <h6 class="fw-bold mb-3">
-
-                            Notes
-
-                        </h6>
-
-                        <ul class="list-group mb-3">
-
-                            {% for categorie in m.categories %}
-
-<li class="list-group-item d-flex justify-content-between align-items-center">
-
-    <span>
-
-        {{ categorie.nom }}
-
-    </span>
-
-    <strong>
-
-        {% with trouve=False %}
-
-            {% for note in m.notes %}
-
-                {% if note.categorie.id == categorie.id %}
-
-                    {{ note.valeur }}
+                  <span class="badge bg-secondary">
+                    En attente
+                  </span>
 
                 {% endif %}
 
-            {% empty %}
+              </p>
 
-                <span class="badge bg-secondary">
+              <p class="mb-0">
 
+                <strong>Moyenne estimée :</strong>
+
+                {% if m.moyenne_estimation != None %}
+
+                  <span class="badge bg-info text-dark">
+                    {{ m.moyenne_estimation|floatformat:2 }}
+                  </span>
+
+                {% else %}
+
+                  <span class="badge bg-secondary">
                     En attente
+                  </span>
 
-                </span>
+                {% endif %}
 
-            {% endfor %}
-
-        {% endwith %}
-
-    </strong>
-
-</li>
-
-{% endfor %}
-                        </ul>
-
-                        <!-- BUTTON -->
-
-                        <a href="{% url 'ajouter_note' m.id %}"
-                           class="btn btn-primary w-100">
-
-                            <i class="bi bi-pencil-square me-1"></i>
-
-                            Ajouter / Modifier Notes
-
-                        </a>
-
-                    </div>
-
-                </div>
+              </p>
 
             </div>
 
-            {% endfor %}
+            <!-- NOTES OFFICIELLES -->
 
-        {% else %}
+            <h6 class="fw-bold text-success mb-3">
+              Notes officielles
+            </h6>
 
-            <div class="alert alert-warning">
+            <ul class="list-group mb-4">
 
-                Aucun module sélectionné
+              {% for categorie in m.categories %}
+
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                  <span>
+                    {{ categorie.nom }}
+                  </span>
+
+                  <div>
+
+                    {% for note in m.notes %}
+
+                      {% if note.categorie.id == categorie.id %}
+
+                        <span class="badge bg-success">
+                          {{ note.valeur }}
+                        </span>
+
+                      {% endif %}
+
+                    {% empty %}
+
+                      <span class="badge bg-secondary">
+                        En attente
+                      </span>
+
+                    {% endfor %}
+
+                  </div>
+
+                </li>
+
+              {% endfor %}
+
+            </ul>
+
+            <!-- ESTIMATIONS -->
+
+            <h6 class="fw-bold text-primary mb-3">
+              Estimations
+            </h6>
+
+            <ul class="list-group mb-4">
+
+              {% for categorie in m.categories %}
+
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                  <span>
+                    {{ categorie.nom }}
+                  </span>
+
+                  <div>
+
+                    {% for note in m.estimations %}
+
+                      {% if note.categorie.id == categorie.id %}
+
+                        <span class="badge bg-info text-dark">
+                          {{ note.valeur }}
+                        </span>
+
+                      {% endif %}
+
+                    {% empty %}
+
+                      <span class="badge bg-secondary">
+                        En attente
+                      </span>
+
+                    {% endfor %}
+
+                  </div>
+
+                </li>
+
+              {% endfor %}
+
+            </ul>
+
+            <!-- BUTTON -->
+
+            <div class="d-grid gap-2">
+
+              <a href="{% url 'ajouter_estimation' m.id %}"
+                 class="btn btn-outline-primary">
+
+                <i class="bi bi-lightbulb"></i>
+
+                Ajouter Estimation
+
+              </a>
 
             </div>
 
-        {% endif %}
-
-    </div>
-
-    <!-- CHART + SIDE PANEL -->
-
-    <div class="row mt-5 g-4">
-
-        <!-- CHART -->
-
-        <div class="col-lg-8">
-
-            <div class="card chart-card p-4">
-
-                <h5 class="fw-bold mb-4">
-
-                    <i class="bi bi-graph-up-arrow text-primary"></i>
-
-                    Évolution de la Moyenne
-
-                </h5>
-
-                <canvas id="chart"></canvas>
-
-            </div>
+          </div>
 
         </div>
 
-        <!-- RIGHT SIDE -->
+      </div>
 
-        <div class="col-lg-4">
+    {% empty %}
 
-            <!-- NOTIFICATIONS -->
+      <div class="alert alert-warning">
+        Aucun module sélectionné
+      </div>
 
-            <div class="card notification-card p-4 mb-4">
+    {% endfor %}
 
-                <h5 class="fw-bold mb-3">
+  </div>
 
-                    <i class="bi bi-bell-fill text-warning"></i>
+  <!-- CHART -->
 
-                    Notifications
-
-                </h5>
-
-                {% for notif in notifications %}
-
-                <div class="notification-item">
-
-                    {{ notif.message }}
-
-                </div>
-
-                {% empty %}
-
-                <p class="text-muted">
-
-                    Aucune notification
-
-                </p>
-
-                {% endfor %}
-
-            </div>
-
-            <!-- REMARQUES -->
-
-            <div class="card notification-card p-4">
-
-                <h5 class="fw-bold mb-3">
-
-                    <i class="bi bi-chat-left-text-fill text-primary"></i>
-
-                    Remarques du Tuteur
-
-                </h5>
-
-                {% for r in remarques %}
-
-                <div class="notification-item">
-
-                    {{ r.contenu }}
-
-                </div>
-
-                {% empty %}
-
-                <p class="text-muted">
-
-                    Aucune remarque
-
-                </p>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-<div class="card shadow border-0 mt-4">
+  <div class="card shadow-sm border-0 mt-4 mb-5">
 
     <div class="card-body">
 
-        <h5 class="fw-bold mb-4">
+      <h4 class="mb-4">
+        📈 Évolution de la Moyenne
+      </h4>
 
-            Evolution des performances
-
-        </h5>
-
-        <canvas id="evolutionChart"></canvas>
+      <canvas id="evolutionChart"></canvas>
 
     </div>
 
+  </div>
+
 </div>
-<!-- CHART JS -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
-    const data = JSON.parse('{{ evolution|escapejs }}');
+  const evolutionData = JSON.parse(
+    '{{ evolution|escapejs }}'
+  );
 
-    const labels = data.map(item => item.date);
+  const ctx = document.getElementById(
+    'evolutionChart'
+  );
 
-    const values = data.map(item => item.moyenne);
+  const datasets = [];
 
-    new Chart(
+  // ==========================
+  // COURBES RÉELLES
+  // ==========================
 
-        document.getElementById("chart"),
+  for (const moduleName in evolutionData.reelles) {
 
-        {
+    datasets.push({
 
-            type: 'line',
+      label: moduleName + ' (Réelle)',
 
-            data: {
+      data: evolutionData.reelles[moduleName],
 
-                labels: labels,
+      borderColor: 'green',
 
-                datasets: [{
+      backgroundColor: 'rgba(0,128,0,0.1)',
 
-                    label: "Moyenne Générale",
+      tension: 0.4,
 
-                    data: values,
+      fill: false,
 
-                    borderColor: "#0d6efd",
+      pointRadius: 4
 
-                    backgroundColor: "rgba(13,110,253,0.1)",
+    });
 
-                    fill: true,
+  }
 
-                    tension: 0.4,
+  // ==========================
+  // COURBES ESTIMATIONS
+  // ==========================
 
-                    pointRadius: 4
+  for (const moduleName in evolutionData.estimations) {
 
-                }]
+    datasets.push({
 
-            },
+      label: moduleName + ' (Estimation)',
 
-            options: {
+      data: evolutionData.estimations[moduleName],
 
-                responsive: true,
+      borderColor: 'blue',
 
-                plugins: {
+      backgroundColor: 'rgba(0,0,255,0.1)',
 
-                    legend: {
+      tension: 0.4,
 
-                        display: true
+      fill: false,
 
-                    }
+      borderDash: [5, 5],
 
-                },
+      pointRadius: 4
 
-                scales: {
+    });
 
-                    y: {
+  }
 
-                        min: 0,
+  // ==========================
+  // LABELS
+  // ==========================
 
-                        max: 20
+  let maxLength = 0;
 
-                    }
+  Object.values(
+    evolutionData.reelles
+  ).forEach(arr => {
 
-                }
+    if (arr.length > maxLength) {
+      maxLength = arr.length;
+    }
 
-            }
+  });
 
-        }
+  Object.values(
+    evolutionData.estimations
+  ).forEach(arr => {
+
+    if (arr.length > maxLength) {
+      maxLength = arr.length;
+    }
+
+  });
+
+  const labels = [];
+
+  for (let i = 1; i <= maxLength; i++) {
+
+    labels.push(
+      'Évaluation ' + i
     );
 
-</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  }
 
-<script>
+  // ==========================
+  // CHART
+  // ==========================
 
-const evolutionData = JSON.parse('{{ evolution|escapejs }}')
-
-const labels = evolutionData.map(
-    item => item.date
-)
-
-const data = evolutionData.map(
-    item => item.moyenne
-)
-
-const ctx = document.getElementById(
-    'evolutionChart'
-)
-
-new Chart(ctx, {
+  new Chart(ctx, {
 
     type: 'line',
 
     data: {
 
-        labels: labels,
+      labels: labels,
 
-        datasets: [{
+      datasets: datasets
 
-            label: 'Evolution Moyenne',
+    },
 
-            data: data,
+    options: {
 
-            tension: 0.4,
+      responsive: true,
 
-            fill: true
+      plugins: {
 
-        }]
+        legend: {
+
+          display: true
+
+        }
+
+      },
+
+      scales: {
+
+        y: {
+
+          min: 0,
+
+          max: 20
+
+        }
+
+      }
+
     }
-})
+
+  });
 
 </script>
+
 {% endblock %}

@@ -4,16 +4,15 @@ from django.shortcuts import (
     redirect
 )
 
-from reportlab.pdfgen import canvas
-
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import (
     HttpResponseForbidden,
     HttpResponse
 )
 
-from django.contrib.auth.models import User
+from reportlab.pdfgen import canvas
 
 from .models import (
     Inscription,
@@ -30,6 +29,8 @@ from .forms import (
 )
 
 import json
+
+from collections import defaultdict
 
 
 # =====================================================
@@ -58,20 +59,93 @@ def dashboard(request):
 
     ).order_by('-created_at')[:5]
 
+    evolution_reelles = defaultdict(list)
+
+    evolution_estimations = defaultdict(list)
+
     modules = []
 
-    total_general = 0
+    for mc in inscription.modules.select_related(
+        "module"
+    ).prefetch_related(
+        "notes",
+        "module__categories"
+    ):
 
-    for mc in inscription.modules.all():
+        # =========================================
+        # COURBE EVOLUTION
+        # =========================================
+
+        notes_officielles = mc.notes.filter(
+            type_note='officielle'
+        ).order_by('date_saisie')
+
+        notes_estimations = mc.notes.filter(
+            type_note='estimation'
+        ).order_by('date_saisie')
+
+        for note in notes_officielles:
+
+            evolution_reelles[
+                mc.module.titre
+            ].append(float(note.valeur))
+
+        for note in notes_estimations:
+
+            evolution_estimations[
+                mc.module.titre
+            ].append(float(note.valeur))
+
+        # =========================================
+        # RECOMMANDATION ENGINE
+        # =========================================
+
+        recommandation = None
 
         moyenne_module = mc.moyenne()
 
+        moyenne_estimation = (
+            mc.moyenne_estimation()
+        )
+
         if moyenne_module is not None:
 
-            total_general += (
-                moyenne_module
-                * mc.module.coefficient
-            )
+            if moyenne_module < 10:
+
+                recommandation = (
+                    "Module critique : "
+                    "augmentation du temps de révision recommandée."
+                )
+
+            elif moyenne_module < 14:
+
+                recommandation = (
+                    "Résultat moyen : "
+                    "continuez les exercices et les révisions."
+                )
+
+            else:
+
+                recommandation = (
+                    "Très bon niveau : "
+                    "continuez sur cette progression."
+                )
+
+        elif moyenne_estimation is not None:
+
+            if moyenne_estimation < 10:
+
+                recommandation = (
+                    "Estimation faible : "
+                    "travail supplémentaire recommandé."
+                )
+
+            else:
+
+                recommandation = (
+                    "Bonne estimation : "
+                    "continuez vos efforts."
+                )
 
         modules.append({
 
@@ -83,49 +157,32 @@ def dashboard(request):
 
             "moyenne": moyenne_module,
 
-            "categories": mc.module.categories.all(),
+            "moyenne_estimation":
+            moyenne_estimation,
 
-            "notes": mc.notes.all()
+            "recommendation":
+            recommandation,
+
+            "categories":
+            mc.module.categories.all(),
+
+            "notes":
+            notes_officielles,
+
+            "estimations":
+            notes_estimations,
         })
 
-    moyenne_generale = round(
-        total_general / 60,
-        2
-    ) if total_general > 0 else 0
+    evolution = {
 
-    # =================================================
-    # EVOLUTION NOTES
-    # =================================================
+        "reelles": dict(
+            evolution_reelles
+        ),
 
-    notes = Note.objects.filter(
-
-        module_choisi__inscription=inscription
-
-    ).order_by("date_saisie")
-
-    evolution = []
-
-    running_total = 0
-
-    count = 0
-
-    for note in notes:
-
-        running_total += note.valeur
-
-        count += 1
-
-        evolution.append({
-
-            "date": note.date_saisie.strftime(
-                "%Y-%m-%d %H:%M"
-            ),
-
-            "moyenne": round(
-                running_total / count,
-                2
-            )
-        })
+        "estimations": dict(
+            evolution_estimations
+        )
+    }
 
     return render(
 
@@ -135,13 +192,18 @@ def dashboard(request):
 
         {
 
+            "inscription": inscription,
+
             "modules": modules,
 
-            "moyenne_generale": moyenne_generale,
+            "moyenne_generale":
+            inscription.moyenne_generale(),
 
-            "evolution": json.dumps(evolution),
+            "evolution":
+            json.dumps(evolution),
 
-            "notifications": notifications,
+            "notifications":
+            notifications,
         }
     )
 
@@ -155,19 +217,11 @@ def ajouter_note(request, module_id):
 
     profile = request.user.profile
 
-    # =================================================
-    # ENSEIGNANT ONLY
-    # =================================================
-
     if profile.role != "enseignant":
 
         return HttpResponseForbidden(
             "Accès refusé"
         )
-
-    # =================================================
-    # SECURITE
-    # =================================================
 
     module_choisi = get_object_or_404(
 
@@ -178,6 +232,8 @@ def ajouter_note(request, module_id):
         module__enseignant=request.user
     )
 
+    categories = module_choisi.module.categories.all()
+
     # =================================================
     # NOTES EXISTANTES
     # =================================================
@@ -185,7 +241,10 @@ def ajouter_note(request, module_id):
     notes_existantes = {}
 
     notes_db = Note.objects.filter(
-        module_choisi=module_choisi
+
+        module_choisi=module_choisi,
+
+        type_note='officielle'
     )
 
     for note in notes_db:
@@ -200,13 +259,11 @@ def ajouter_note(request, module_id):
 
         au_moins_une_note = False
 
-        for categorie in module_choisi.module.categories.all():
+        for categorie in categories:
 
             valeur = request.POST.get(
                 f"cat_{categorie.id}"
             )
-
-            # IGNORER CHAMPS VIDES
 
             if valeur == "" or valeur is None:
 
@@ -232,8 +289,6 @@ def ajouter_note(request, module_id):
                     module_id=module_choisi.id
                 )
 
-            # VALIDATION NOTE
-
             if valeur < 0 or valeur > 20:
 
                 messages.error(
@@ -248,13 +303,13 @@ def ajouter_note(request, module_id):
                     module_id=module_choisi.id
                 )
 
-            # AJOUT / MODIFICATION
-
             Note.objects.update_or_create(
 
                 module_choisi=module_choisi,
 
                 categorie=categorie,
+
+                type_note='officielle',
 
                 defaults={
 
@@ -275,10 +330,6 @@ def ajouter_note(request, module_id):
                 "ajouter_note",
                 module_id=module_choisi.id
             )
-
-        # =================================================
-        # NOTIFICATION
-        # =================================================
 
         Notification.objects.create(
 
@@ -308,7 +359,7 @@ def ajouter_note(request, module_id):
 
             "module_choisi": module_choisi,
 
-            "categories": module_choisi.module.categories.all(),
+            "categories": categories,
 
             "notes_existantes": notes_existantes
         }
@@ -322,24 +373,23 @@ def ajouter_note(request, module_id):
 @login_required
 def profile(request):
 
+    user = request.user
+
     if request.method == "POST":
 
-        user = request.user
-
         user.first_name = request.POST.get(
-            'first_name'
+            'first_name',
+            ''
         )
 
         user.last_name = request.POST.get(
-            'last_name'
+            'last_name',
+            ''
         )
 
         user.email = request.POST.get(
-            'email'
-        )
-
-        user.profile.telephone = request.POST.get(
-            'telephone'
+            'email',
+            ''
         )
 
         password = request.POST.get(
@@ -348,11 +398,20 @@ def profile(request):
 
         if password:
 
+            if len(password) < 6:
+
+                messages.error(
+
+                    request,
+
+                    "Le mot de passe doit contenir au moins 6 caractères."
+                )
+
+                return redirect("profile")
+
             user.set_password(password)
 
         user.save()
-
-        user.profile.save()
 
         messages.success(
 
@@ -361,11 +420,18 @@ def profile(request):
             "Profil mis à jour avec succès."
         )
 
+        return redirect("profile")
+
     return render(
 
         request,
 
-        'profile.html'
+        'profile.html',
+
+        {
+
+            "user": user
+        }
     )
 
 
@@ -558,12 +624,17 @@ def mes_remarques(request):
 
         etudiant=request.user
 
+    ).select_related(
+        "enseignant",
+        "module"
     ).order_by('-created_at')
 
     suivis_tuteur = SuiviTuteur.objects.filter(
 
         etudiant=request.user
 
+    ).select_related(
+        "tuteur"
     ).order_by('-created_at')
 
     return render(
@@ -582,6 +653,145 @@ def mes_remarques(request):
 
 
 # =====================================================
+# AJOUT ESTIMATION
+# =====================================================
+
+@login_required
+def ajouter_estimation(request, module_id):
+
+    if request.user.profile.role != "etudiant":
+
+        return HttpResponseForbidden(
+            "Accès refusé"
+        )
+
+    module_choisi = get_object_or_404(
+
+        ModuleChoisi,
+
+        id=module_id,
+
+        inscription__user=request.user
+    )
+
+    categories = module_choisi.module.categories.all()
+
+    if request.method == "POST":
+
+        au_moins_une_note = False
+
+        for categorie in categories:
+
+            valeur = request.POST.get(
+                f"cat_{categorie.id}"
+            )
+
+            if valeur == "" or valeur is None:
+
+                continue
+
+            au_moins_une_note = True
+
+            try:
+
+                valeur = float(valeur)
+
+            except ValueError:
+
+                messages.error(
+
+                    request,
+
+                    "Veuillez saisir un nombre valide."
+                )
+
+                return redirect(
+                    "ajouter_estimation",
+                    module_id=module_choisi.id
+                )
+
+            if valeur < 0 or valeur > 20:
+
+                messages.error(
+
+                    request,
+
+                    "La note doit être entre 0 et 20."
+                )
+
+                return redirect(
+                    "ajouter_estimation",
+                    module_id=module_choisi.id
+                )
+
+            Note.objects.update_or_create(
+
+                module_choisi=module_choisi,
+
+                categorie=categorie,
+
+                type_note='estimation',
+
+                defaults={
+
+                    "valeur": valeur
+                }
+            )
+
+        if not au_moins_une_note:
+
+            messages.error(
+
+                request,
+
+                "Veuillez saisir au moins une estimation."
+            )
+
+            return redirect(
+                "ajouter_estimation",
+                module_id=module_choisi.id
+            )
+
+        messages.success(
+
+            request,
+
+            "Estimations enregistrées."
+        )
+
+        return redirect("dashboard")
+
+    notes_existantes = Note.objects.filter(
+
+        module_choisi=module_choisi,
+
+        type_note='estimation'
+    )
+
+    notes_dict = {}
+
+    for note in notes_existantes:
+
+        notes_dict[str(note.categorie.id)] = note.valeur
+
+    return render(
+
+        request,
+
+        "enrollment/ajouter_estimation.html",
+
+        {
+
+            "module_choisi": module_choisi,
+
+            "categories": categories,
+
+            "notes_dict": notes_dict
+        }
+    )
+
+
+# =====================================================
 # EXPORT PDF
 # =====================================================
 
@@ -594,7 +804,10 @@ def export_pdf(request):
             "Accès refusé"
         )
 
-    inscription = Inscription.objects.get(
+    inscription = get_object_or_404(
+
+        Inscription,
+
         user=request.user
     )
 
@@ -612,7 +825,7 @@ def export_pdf(request):
 
     p.drawString(
 
-        200,
+        180,
         800,
 
         "Relevé de Notes"
@@ -633,14 +846,20 @@ def export_pdf(request):
         50,
         740,
 
+        f"Username : {request.user.username}"
+    )
+
+    p.drawString(
+
+        50,
+        720,
+
         f"Email : {request.user.email}"
     )
 
-    y = 690
+    y = 670
 
-    total = 0
-
-    for mc in inscription.modules.all():
+    for mc in inscription.modules.select_related("module"):
 
         moyenne = mc.moyenne()
 
@@ -648,25 +867,23 @@ def export_pdf(request):
 
             moyenne = 0
 
-        total += (
-            moyenne
-            * mc.module.coefficient
-        )
+        coefficient = mc.module.coefficient
 
         p.drawString(
 
             50,
             y,
 
-            f"{mc.module.titre} | Coef: {mc.module.coefficient} | Moyenne: {round(moyenne, 2)}"
+            f"{mc.module.titre} | Coef: {coefficient} | Moyenne: {round(moyenne, 2)}"
         )
 
         y -= 25
 
-    moyenne_generale = round(
-        total / 60,
-        2
-    )
+        if y <= 80:
+
+            p.showPage()
+
+            y = 800
 
     p.setFont(
         "Helvetica-Bold",
@@ -678,7 +895,7 @@ def export_pdf(request):
         50,
         y - 20,
 
-        f"Moyenne Générale : {moyenne_generale}"
+        f"Moyenne Générale : {inscription.moyenne_generale()}"
     )
 
     p.save()

@@ -6,8 +6,8 @@ from django.shortcuts import (
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import CatalogueModuleForm
 
+from .forms import CatalogueModuleForm
 from .models import CatalogueModule
 
 from enrollment.models import (
@@ -15,71 +15,138 @@ from enrollment.models import (
     ModuleChoisi,
 )
 
-# ====================================
-# CATALOGUE + RECHERCHE
-# ====================================
+
+# =====================================================
+# CATALOGUE ETUDIANT
+# =====================================================
+
 @login_required
 def catalogue(request):
 
     profile = request.user.profile
 
-    # étudiant seulement
+    # =========================================
+    # ACCES ETUDIANT SEULEMENT
+    # =========================================
+
     if profile.role != "etudiant":
 
         return redirect("dashboard")
 
+    # =========================================
+    # INSCRIPTION
+    # =========================================
+
     inscription = get_object_or_404(
+
         Inscription,
+
         user=request.user
     )
-    # mise à jour automatique du statut
+
+    # mise à jour automatique statut
     inscription.verifier_verrouillage()
+
+    # =========================================
+    # MODULES ACTIFS
+    # =========================================
+
     modules = CatalogueModule.objects.filter(
+
         est_actif=True
-    )
+
+    ).select_related('enseignant')
+
+    # =========================================
+    # MODULES DEJA CHOISIS
+    # =========================================
 
     modules_choisis = inscription.modules.values_list(
+
         "module_id",
+
         flat=True
     )
 
+    # =========================================
+    # STATISTIQUES
+    # =========================================
+
     total = inscription.total_coefficient()
 
-    # ====================================
-    # SUGGESTIONS INTELLIGENTES
-    # ====================================
+    reste = inscription.reste()
 
     moyenne = inscription.moyenne_generale()
 
+    # =========================================
+    # MODULES DISPONIBLES
+    # =========================================
+
+    modules_disponibles = modules.exclude(
+
+        id__in=modules_choisis
+    )
+
+    # =========================================
+    # SUGGESTIONS INTELLIGENTES
+    # =========================================
+
+    # Etudiant sans notes
     if moyenne is None or moyenne == 0:
 
-        suggestions = modules.exclude(
-            id__in=modules_choisis
-        )[:3]
+        suggestions = modules_disponibles.filter(
 
+            coefficient__lte=reste
+
+        ).order_by('coefficient')[:3]
+
+    # Etudiant faible
     elif moyenne < 10:
 
-        suggestions = modules.filter(
-            coefficient__lte=2
-        ).exclude(
-            id__in=modules_choisis
-        )[:3]
+        suggestions = modules_disponibles.filter(
 
+            coefficient__lte=min(reste, 20)
+
+        ).order_by('coefficient')[:3]
+
+    # Etudiant moyen
     elif moyenne < 14:
 
-        suggestions = modules.filter(
-            coefficient__lte=4
-        ).exclude(
-            id__in=modules_choisis
-        )[:3]
+        suggestions = modules_disponibles.filter(
 
+            coefficient__lte=min(reste, 30)
+
+        ).order_by('coefficient')[:3]
+
+    # Bon étudiant
     else:
 
-        suggestions = modules.filter(
-            coefficient__gte=4
-        ).exclude(
-            id__in=modules_choisis
-        )[:3]
+        suggestions = modules_disponibles.filter(
+
+            coefficient__lte=reste
+
+        ).order_by('-coefficient')[:3]
+
+    # =========================================
+    # RENDER
+    # =========================================
+
+    context = {
+
+        "modules": modules,
+
+        "modules_choisis": modules_choisis,
+
+        "total": total,
+
+        "reste": reste,
+
+        "statut": inscription.statut,
+
+        "suggestions": suggestions,
+
+        "moyenne_generale": moyenne,
+    }
 
     return render(
 
@@ -87,83 +154,104 @@ def catalogue(request):
 
         "catalog/catalogue.html",
 
-        {
-
-            "modules": modules,
-
-            "modules_choisis": modules_choisis,
-
-            "total": total,
-
-            "reste": inscription.reste(),
-
-            "statut": inscription.statut,
-
-            "suggestions": suggestions,
-
-            
-
-        }
+        context
     )
 
-# ====================================
+
+# =====================================================
 # AJOUT MODULE
-# ====================================
+# =====================================================
 
 @login_required
 def ajouter_module(request, module_id):
 
     profile = request.user.profile
 
+    # =========================================
+    # ACCES ETUDIANT
+    # =========================================
+
     if profile.role != "etudiant":
 
         return redirect("dashboard")
 
     inscription = get_object_or_404(
+
         Inscription,
+
         user=request.user
     )
 
-    
+    # =========================================
     # INSCRIPTION VERROUILLEE
+    # =========================================
+
     if inscription.statut == "verrouillee":
 
         messages.error(
+
             request,
-            "Inscription verrouillée"
+
+            "Votre inscription est verrouillée."
         )
 
         return redirect("catalogue")
 
+    # =========================================
+    # MODULE
+    # =========================================
+
     module = get_object_or_404(
+
         CatalogueModule,
-        id=module_id
+
+        id=module_id,
+
+        est_actif=True
     )
 
-    # DEJA AJOUTE
+    # =========================================
+    # MODULE DEJA CHOISI
+    # =========================================
+
     if ModuleChoisi.objects.filter(
+
         inscription=inscription,
+
         module=module
+
     ).exists():
 
         messages.warning(
+
             request,
-            "Module déjà choisi"
+
+            "Ce module est déjà sélectionné."
         )
 
         return redirect("catalogue")
 
-    # DEPASSEMENT 60
+    # =========================================
+    # DEPASSEMENT 60 POINTS
+    # =========================================
+
     if not inscription.can_add_module(module):
 
         messages.error(
+
             request,
-            "Limite 60 points dépassée"
+
+            f"Impossible d’ajouter "
+            f"{module.titre}. "
+            f"Limite des 60 points dépassée."
         )
 
         return redirect("catalogue")
 
+    # =========================================
     # AJOUT MODULE
+    # =========================================
+
     ModuleChoisi.objects.create(
 
         inscription=inscription,
@@ -171,43 +259,61 @@ def ajouter_module(request, module_id):
         module=module
     )
 
+    # mise à jour statut
     inscription.verifier_verrouillage()
 
     messages.success(
+
         request,
-        "Module ajouté avec succès"
+
+        "Module ajouté avec succès."
     )
 
     return redirect("catalogue")
 
 
-# ====================================
-# SUPPRIMER MODULE
-# ====================================
+# =====================================================
+# SUPPRESSION MODULE
+# =====================================================
 
 @login_required
 def supprimer_module(request, module_id):
 
     profile = request.user.profile
 
+    # =========================================
+    # ACCES ETUDIANT
+    # =========================================
+
     if profile.role != "etudiant":
 
         return redirect("dashboard")
 
     inscription = get_object_or_404(
+
         Inscription,
+
         user=request.user
     )
 
+    # =========================================
     # INSCRIPTION VERROUILLEE
+    # =========================================
+
     if inscription.statut == "verrouillee":
 
         messages.error(
+
             request,
-            "Inscription verrouillée"
+
+            "Votre inscription est verrouillée."
         )
 
         return redirect("catalogue")
+
+    # =========================================
+    # MODULE CHOISI
+    # =========================================
 
     module_choisi = get_object_or_404(
 
@@ -219,23 +325,38 @@ def supprimer_module(request, module_id):
     )
 
     module_choisi.delete()
+
+    # mise à jour statut
     inscription.verifier_verrouillage()
 
-
     messages.success(
+
         request,
-        "Module supprimé"
+
+        "Module supprimé avec succès."
     )
 
     return redirect("catalogue")
 
 
+# =====================================================
+# AJOUT MODULE ENSEIGNANT
+# =====================================================
+
 @login_required
 def ajouter_module_enseignant(request):
+
+    # =========================================
+    # ACCES ENSEIGNANT
+    # =========================================
 
     if request.user.profile.role != "enseignant":
 
         return redirect("dashboard")
+
+    # =========================================
+    # FORMULAIRE
+    # =========================================
 
     if request.method == "POST":
 
@@ -249,20 +370,24 @@ def ajouter_module_enseignant(request):
 
             module.save()
 
-            module = form.save(commit=False)
-            module.enseignant = request.user
-            module.save()
-
             messages.success(
+
                 request,
+
                 "Module ajouté avec succès."
             )
 
-            return redirect("enseignant_dashboard")
+            return redirect(
+                "enseignant_dashboard"
+            )
 
     else:
 
         form = CatalogueModuleForm()
+
+    # =========================================
+    # RENDER
+    # =========================================
 
     return render(
 

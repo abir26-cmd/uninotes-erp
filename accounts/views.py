@@ -32,9 +32,21 @@ from catalog.models import (
 from catalog.forms import CatalogueModuleForm
 
 
-# =========================================
+# =====================================================
+# ROLE CHECK
+# =====================================================
+
+def check_role(user, role):
+
+    return (
+        hasattr(user, "profile")
+        and user.profile.role == role
+    )
+
+
+# =====================================================
 # REGISTER
-# =========================================
+# =====================================================
 
 def register_view(request):
 
@@ -60,11 +72,24 @@ def register_view(request):
             "tuteur"
         )
 
+        # =========================
+        # VALIDATION
+        # =========================
+
         if not username or not password or not role:
 
             messages.error(
                 request,
-                "Tous les champs sont obligatoires"
+                "Tous les champs sont obligatoires."
+            )
+
+            return redirect("register")
+
+        if len(password) < 6:
+
+            messages.error(
+                request,
+                "Mot de passe trop court."
             )
 
             return redirect("register")
@@ -75,15 +100,17 @@ def register_view(request):
 
             messages.error(
                 request,
-                "Username déjà utilisé"
+                "Username déjà utilisé."
             )
 
             return redirect("register")
 
+        # =========================
+        # CREATE USER
+        # =========================
+
         user = User.objects.create_user(
-
             username=username,
-
             password=password
         )
 
@@ -107,6 +134,10 @@ def register_view(request):
 
                     tuteur = None
 
+            if tuteur == user:
+
+                tuteur = None
+
             Profile.objects.create(
 
                 user=user,
@@ -116,8 +147,17 @@ def register_view(request):
                 tuteur=tuteur
             )
 
+            # création inscription automatique
+
+            Inscription.objects.create(
+
+                user=user,
+
+                annee_academique="2025/2026"
+            )
+
         # =========================
-        # ENSEIGNANT / TUTEUR
+        # TUTEUR / ENSEIGNANT
         # =========================
 
         else:
@@ -131,7 +171,7 @@ def register_view(request):
 
         messages.success(
             request,
-            "Compte créé avec succès"
+            "Compte créé avec succès."
         )
 
         return redirect("login")
@@ -143,15 +183,14 @@ def register_view(request):
         "accounts/register.html",
 
         {
-
             "tuteurs": tuteurs
         }
     )
 
 
-# =========================================
+# =====================================================
 # LOGIN
-# =========================================
+# =====================================================
 
 def login_view(request):
 
@@ -209,17 +248,13 @@ def login_view(request):
             # =========================
 
             return redirect(
-                "catalogue"
+                "dashboard"
             )
 
-        else:
-
-            messages.error(
-
-                request,
-
-                "Identifiants invalides"
-            )
+        messages.error(
+            request,
+            "Identifiants invalides."
+        )
 
     return render(
 
@@ -229,9 +264,9 @@ def login_view(request):
     )
 
 
-# =========================================
+# =====================================================
 # LOGOUT
-# =========================================
+# =====================================================
 
 def logout_view(request):
 
@@ -240,20 +275,23 @@ def logout_view(request):
     return redirect("login")
 
 
-# =========================================
+# =====================================================
 # TUTOR DASHBOARD
-# =========================================
+# =====================================================
 
 @login_required
 def tutor_dashboard(request):
 
-    profile = request.user.profile
+    if not check_role(
+        request.user,
+        "tuteur"
+    ):
 
-    if profile.role != "tuteur":
+        return redirect("dashboard")
 
-        return redirect("catalogue")
-
-    etudiants = Profile.objects.filter(
+    etudiants = Profile.objects.select_related(
+        "user"
+    ).filter(
 
         tuteur=request.user,
 
@@ -343,18 +381,96 @@ def tutor_dashboard(request):
     )
 
 
-# =========================================
-# AJOUTER MODULE
-# =========================================
+# =====================================================
+# DASHBOARD ENSEIGNANT
+# =====================================================
+
+@login_required
+def enseignant_dashboard(request):
+
+    if not check_role(
+        request.user,
+        "enseignant"
+    ):
+
+        return redirect("dashboard")
+
+    modules = CatalogueModule.objects.filter(
+
+        enseignant=request.user
+
+    ).prefetch_related(
+        "categories"
+    )
+
+    data = []
+
+    for module in modules:
+
+        etudiants_data = []
+
+        modules_choisis = ModuleChoisi.objects.filter(
+            module=module
+        )
+
+        for mc in modules_choisis:
+
+            moyenne = mc.moyenne()
+
+            etudiants_data.append({
+
+                "username":
+                mc.inscription.user.username,
+
+                "notes":
+                mc.notes.filter(
+                    type_note='officielle'
+                ),
+
+                "moyenne":
+                moyenne,
+
+                "module_choisi_id":
+                mc.id
+            })
+
+        data.append({
+
+            "module":
+            module,
+
+            "categories":
+            module.categories.all(),
+
+            "etudiants":
+            etudiants_data
+        })
+
+    return render(
+
+        request,
+
+        "accounts/enseignant_dashboard.html",
+
+        {
+            "data": data
+        }
+    )
+
+
+# =====================================================
+# AJOUT MODULE ENSEIGNANT
+# =====================================================
 
 @login_required
 def ajouter_module_enseignant(request):
 
-    profile = request.user.profile
+    if not check_role(
+        request.user,
+        "enseignant"
+    ):
 
-    if profile.role != "enseignant":
-
-        return redirect("catalogue")
+        return redirect("dashboard")
 
     if request.method == "POST":
 
@@ -373,10 +489,8 @@ def ajouter_module_enseignant(request):
             module.save()
 
             messages.success(
-
                 request,
-
-                "Module ajouté avec succès"
+                "Module ajouté avec succès."
             )
 
             return redirect(
@@ -394,91 +508,27 @@ def ajouter_module_enseignant(request):
         "accounts/ajouter_module.html",
 
         {
-
             "form": form
         }
     )
 
 
-# =========================================
-# DASHBOARD ENSEIGNANT
-# =========================================
-
-@login_required
-def enseignant_dashboard(request):
-
-    profile = request.user.profile
-
-    if profile.role != "enseignant":
-
-        return redirect("catalogue")
-
-    modules = CatalogueModule.objects.filter(
-
-        enseignant=request.user
-    )
-
-    data = []
-
-    for module in modules:
-
-        etudiants_data = []
-
-        modules_choisis = ModuleChoisi.objects.filter(
-
-            module=module
-        )
-
-        for mc in modules_choisis:
-
-            notes = Note.objects.filter(
-
-                module_choisi=mc
-            )
-
-            moyenne = mc.moyenne()
-
-            etudiants_data.append({
-
-                "username": mc.inscription.user.username,
-
-                "notes": notes,
-
-                "moyenne": moyenne,
-
-                "module_choisi_id": mc.id
-
-            })
-
-        data.append({
-
-            "module": module,
-
-            "categories": module.categories.all(),
-
-            "etudiants": etudiants_data
-
-        })
-
-    return render(
-
-        request,
-
-        "accounts/enseignant_dashboard.html",
-
-        {
-
-            "data": data
-        }
-    )
-
-
-# =========================================
+# =====================================================
 # MODIFIER MODULE
-# =========================================
+# =====================================================
 
 @login_required
-def modifier_module_enseignant(request, module_id):
+def modifier_module_enseignant(
+    request,
+    module_id
+):
+
+    if not check_role(
+        request.user,
+        "enseignant"
+    ):
+
+        return redirect("dashboard")
 
     module = get_object_or_404(
 
@@ -506,7 +556,7 @@ def modifier_module_enseignant(request, module_id):
 
                 request,
 
-                "Module modifié avec succès"
+                "Module modifié avec succès."
             )
 
             return redirect(
@@ -526,19 +576,33 @@ def modifier_module_enseignant(request, module_id):
         "accounts/ajouter_module.html",
 
         {
-
             "form": form
         }
     )
 
 
-# =========================================
+# =====================================================
 # SUPPRIMER MODULE
-# =========================================
-
+# =====================================================
 
 @login_required
-def supprimer_module_enseignant(request, module_id):
+def supprimer_module_enseignant(
+    request,
+    module_id
+):
+
+    if not check_role(
+        request.user,
+        "enseignant"
+    ):
+
+        return redirect("dashboard")
+
+    if request.method != "POST":
+
+        return redirect(
+            "enseignant_dashboard"
+        )
 
     module = get_object_or_404(
 
@@ -548,10 +612,6 @@ def supprimer_module_enseignant(request, module_id):
 
         enseignant=request.user
     )
-
-    # =========================
-    # CHECK ETUDIANTS INSCRITS
-    # =========================
 
     existe = ModuleChoisi.objects.filter(
         module=module
@@ -563,16 +623,12 @@ def supprimer_module_enseignant(request, module_id):
 
             request,
 
-            "Impossible de supprimer : des étudiants sont déjà inscrits dans ce module."
+            "Impossible de supprimer : des étudiants sont inscrits."
         )
 
         return redirect(
             "enseignant_dashboard"
         )
-
-    # =========================
-    # SUPPRESSION
-    # =========================
 
     module.delete()
 
@@ -586,20 +642,24 @@ def supprimer_module_enseignant(request, module_id):
     return redirect(
         "enseignant_dashboard"
     )
-    
-    
-# =========================================
+
+
+# =====================================================
 # AJOUTER CATEGORIE
-# =========================================
+# =====================================================
 
 @login_required
-def ajouter_categorie(request, module_id):
+def ajouter_categorie(
+    request,
+    module_id
+):
 
-    profile = request.user.profile
+    if not check_role(
+        request.user,
+        "enseignant"
+    ):
 
-    if profile.role != "enseignant":
-
-        return redirect("catalogue")
+        return redirect("dashboard")
 
     module = get_object_or_404(
 
@@ -614,13 +674,31 @@ def ajouter_categorie(request, module_id):
 
         nom = request.POST.get("nom")
 
-        poids = int(
-            request.POST.get("poids")
+        poids = request.POST.get(
+            "poids"
         )
+
+        try:
+
+            poids = float(poids)
+
+        except:
+
+            messages.error(
+                request,
+                "Poids invalide."
+            )
+
+            return redirect(
+                "ajouter_categorie",
+                module_id=module.id
+            )
 
         total = sum(
 
-            c.poids for c in module.categories.all()
+            float(c.poids)
+
+            for c in module.categories.all()
         )
 
         nouveau_total = total + poids
@@ -631,7 +709,7 @@ def ajouter_categorie(request, module_id):
 
                 request,
 
-                "Le total dépasse 100%"
+                "Le total dépasse 100%."
             )
 
             return redirect(
@@ -654,7 +732,7 @@ def ajouter_categorie(request, module_id):
 
             request,
 
-            "Catégorie ajoutée avec succès"
+            "Catégorie ajoutée avec succès."
         )
 
         return redirect(
@@ -668,7 +746,6 @@ def ajouter_categorie(request, module_id):
         "accounts/ajouter_categorie.html",
 
         {
-
             "module": module
         }
     )
