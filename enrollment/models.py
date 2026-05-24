@@ -130,7 +130,7 @@ class Inscription(models.Model):
 
         total_points = Decimal('0')
 
-        total_coefficients = Decimal('0')
+        total_coefficients = Decimal('60')
 
         modules = self.modules.select_related(
             'module'
@@ -151,19 +151,13 @@ class Inscription(models.Model):
                 Decimal(str(moyenne_module))
                 * coefficient
             )
-
-            total_coefficients += coefficient
-
-        if total_coefficients == 0:
-
-            return Decimal('0')
-
+            if total_coefficients == 0:
+                return Decimal('0')
         return round(
-
             total_points / total_coefficients,
-
             2
         )
+
 
 
 # =====================================================
